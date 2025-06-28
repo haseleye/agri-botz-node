@@ -9,9 +9,6 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
-const fs = require('fs');
-const http = require('http');
-const https = require('https');
 const iotCloud = require('./controllers/iotCloud');
 
 const {i18next, i18nextMiddleware} = require('./controllers/localization');
@@ -63,33 +60,12 @@ app.use(errorHandler);
 const port = normalizePort(process.env.PORT || '3001');
 app.set('port', port);
 
-const sslInstalled = process.env.SECURITY_SSL_INSTALLED === 'True';
-if (sslInstalled) {
-  const options = {
-    key: fs.readFileSync('ssl/privkey.pem'),
-    cert: fs.readFileSync('ssl/cert.pem'),
-    ca: [
-      fs.readFileSync('ssl/chain.pem'),
-      fs.readFileSync('ssl/fullchain.pem'),
-    ]
-  };
-  const httpsServer = https.createServer(options, app);
-  connectDB()
-      .then(() => {
-        httpsServer.listen(port, onListening).on('error', onError);
-        iotCloud.connectionScheduler(app);
-        iotCloud.connect(app).catch((err) => console.error(err));
-      });
-}
-else {
-  const httpServer = http.createServer(app);
-  connectDB()
-      .then(() => {
-        httpServer.listen(port, onListening).on('error', onError);
-        iotCloud.connectionScheduler(app);
-        iotCloud.connect(app).catch((err) => console.error(err));
-      });
-}
+connectDB()
+    .then(() => {
+      app.listen(port, onListening).on('error', onError);
+      iotCloud.connectionScheduler(app);
+      iotCloud.connect(app).catch((err) => console.error(err));
+    });
 
 /** Normalize a port into a number, string, or false */
 function normalizePort(val) {
