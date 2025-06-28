@@ -1,6 +1,6 @@
 const {ArduinoIoTCloud} = require('arduino-iot-js');
 const Users = require('../models/users');
-const Devices = require('../models/Devices');
+const Devices = require('../models/devices');
 const ControlUnits = require('../models/controlUnits');
 const Variables = require('../models/variables');
 const {isNumeric, isFloat} = require('../utils/numberUtils');
