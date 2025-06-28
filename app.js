@@ -65,12 +65,13 @@ app.set('port', port);
 
 const sslInstalled = process.env.SECURITY_SSL_INSTALLED === 'True';
 if (sslInstalled) {
+  const certPath = '/etc/letsencrypt/live/dev.agribotz.com/';
   const options = {
-    key: fs.readFileSync('ssl/privkey.pem'),
-    cert: fs.readFileSync('ssl/cert.pem'),
+    key: fs.readFileSync(path.join(certPath, 'privkey.pem')),
+    cert: fs.readFileSync(path.join(certPath, 'cert.pem')),
     ca: [
-      fs.readFileSync('ssl/chain.pem'),
-      fs.readFileSync('ssl/fullchain.pem'),
+      fs.readFileSync(path.join(certPath, 'chain.pem')),
+      fs.readFileSync(path.join(certPath, 'fullchain.pem')),
     ]
   };
   const httpsServer = https.createServer(options, app);
