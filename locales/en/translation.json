@@ -220,6 +220,7 @@
     "missingSolenoid2": "Solenoid2 data is required",
     "incorrectSerial": "This Serial Number is not registered yet",
     "registeredSerial": "This Serial Number is already registered",
+    "registered": "The product with the serial number {{serialNumber}} has been registered successfully",
     "notConfiguredCU": "This Control Unit is not configured yet"
   },
   "currencies": {

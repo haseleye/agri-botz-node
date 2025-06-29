@@ -650,7 +650,9 @@ const registerControlUnit = async (req, res) => {
                 res.status(200).json({
                     status: "success",
                     error: "",
-                    message: {}
+                    message: {
+                        info: req.i18n.t('iot.registered', {serialNumber})
+                    }
                 });
             })
             .catch((err) => {
