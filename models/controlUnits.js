@@ -11,6 +11,8 @@ const controlUnitSchema = new Schema({
         solenoid1Pin2: Number,
         solenoid2Pin1: Number,
         solenoid2Pin2: Number,
+        relay1Pin: Number,
+        relay2Pin: Number,
     }
 })
 

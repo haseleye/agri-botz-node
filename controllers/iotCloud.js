@@ -637,7 +637,18 @@ const registerControlUnit = async (req, res) => {
             });
         }
 
-        if (firmwareVersion.toString().split('.').length !== 3) {
+        const version = firmwareVersion.toString().split('.');
+        if (version.length !== 3 || !isNumeric(version[0]) || !isNumeric(version[1]) || !isNumeric(version[2])
+            || version[0] < 1 || version[0] > 40 || version[1] <= 0 || version[2] < 0 || version[2] > 9) {
+            return res.status(400).json({
+                status: "failed",
+                error: req.i18n.t('iot.invalidDataType'),
+                message: {}
+            });
+        }
+
+        const valves = version[1].toString().split('');
+        if (valves.length !== 2 || parseInt(valves[0]) + parseInt(valves[1]) > 2 ) {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.invalidDataType'),
@@ -657,7 +668,7 @@ const registerControlUnit = async (req, res) => {
             })
             .catch((err) => {
                 if (err.toString().includes('duplicate key error')) {
-                    res.status(500).json({
+                    res.status(400).json({
                         status: "failed",
                         error: req.i18n.t('iot.registeredSerial'),
                         message: {}
@@ -689,8 +700,7 @@ const configureControlUnit = async (req, res) => {
     try {
         const {serialNumber, deviceId, config} = await req.body;
 
-        if (serialNumber === undefined || deviceId === undefined || config === undefined
-            || config.solenoid1Pin1 === undefined || config.solenoid1Pin2 === undefined) {
+        if (serialNumber === undefined || deviceId === undefined || config === undefined) {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.notComplete'),
@@ -708,16 +718,49 @@ const configureControlUnit = async (req, res) => {
                     });
                 }
 
-                if (controlUnit.firmwareVersion.toString().split('.')[1] == 2
-                    && (config.solenoid2Pin1 === undefined || config.solenoid2Pin2 === undefined)) {
-                    return res.status(400).json({
-                        status: "failed",
-                        error: req.i18n.t('iot.missingSolenoid2'),
-                        message: {}
-                    });
+                const versionParts = controlUnit.firmwareVersion.toString().split('.');
+                const solenoidCount = parseInt(versionParts[1].toString().split('')[0]);
+                const relayCount = parseInt(versionParts[1].toString().split('')[1]);
+                if (solenoidCount === 1) {
+                    if (config.solenoid1Pin1 === undefined || config.solenoid1Pin2 === undefined) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.missingSolenoid1'),
+                            message: {}
+                        });
+                    }
+                }
+                else if (solenoidCount === 2) {
+                    if (config.solenoid1Pin1 === undefined || config.solenoid1Pin2 === undefined
+                        || config.solenoid2Pin1 === undefined || config.solenoid2Pin2 === undefined) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.missingSolenoid2'),
+                            message: {}
+                        });
+                    }
                 }
 
-                await Devices.findOne({_id: deviceId}, {Id: 1})
+                if (relayCount === 1) {
+                    if (config.relay1Pin === undefined) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.missingRelay1'),
+                            message: {}
+                        });
+                    }
+                }
+                else if (relayCount === 2) {
+                    if (config.relay1Pin === undefined || config.relay2Pin === undefined) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.missingRelay2'),
+                            message: {}
+                        });
+                    }
+                }
+
+                await Devices.findOne({_id: deviceId}, {_id: 1, isTerminated: 1, controlUnitId: 1})
                     .then(async (device) => {
                         if (!device) {
                             return res.status(400).json({
@@ -727,13 +770,42 @@ const configureControlUnit = async (req, res) => {
                             });
                         }
 
-                        await ControlUnits.updateOne({_id: serialNumber}, {deviceId, config})
-                            .then(() => {
-                                res.status(200).json({
-                                    status: "success",
-                                    error: "",
-                                    message: {}
-                                });
+                        if (device.isTerminated) {
+                            return res.status(400).json({
+                                status: "failed",
+                                error: req.i18n.t('iot.terminatedDevice'),
+                                message: {}
+                            });
+                        }
+
+                        if (device.controlUnitId !== undefined && device.controlUnitId !== serialNumber) {
+                            return res.status(400).json({
+                                status: "failed",
+                                error: req.i18n.t('iot.usedDevice'),
+                                message: {}
+                            });
+                        }
+
+                        device.controlUnitId = serialNumber;
+                        await device.save()
+                            .then(async () => {
+                                await ControlUnits.updateOne({_id: serialNumber}, {deviceId, config})
+                                    .then(() => {
+                                        res.status(200).json({
+                                            status: "success",
+                                            error: "",
+                                            message: {}
+                                        });
+                                    })
+                                    .catch((err) => {
+                                        res.status(500).json({
+                                            status: "failed",
+                                            error: req.i18n.t('general.internalError'),
+                                            message: {
+                                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                            }
+                                        });
+                                    });
                             })
                             .catch((err) => {
                                 res.status(500).json({

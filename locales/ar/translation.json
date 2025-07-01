@@ -216,10 +216,14 @@
     "terminatedSite": "تم إنهاء هذا الموقع بالفعل",
     "activatedDevice": "هذا الجهاز مفعل بالفعل",
     "terminatedDevice": "تم إنهاء هذا الجهاز بالفعل",
+    "missingSolenoid1": "بيانات محبس سلونويد1 مطلوبة",
     "missingSolenoid2": "بيانات محبس سلونويد2 مطلوبة",
+    "missingRelay1": "بيانات صمام التتابع1 مطلوبة",
+    "missingRelay2": "بيانات صمام التتابع2 مطلوبة",
     "incorrectSerial": "الرقم المسلسل غير مسجل بعد",
     "registeredSerial": "هذا الرقم المسلسل مسجل بالفعل",
     "registered": "تم تسجيل المنتج صاحب الرقم المسلسل {{serialNumber}} بنجاح",
+    "usedDevice": "هذا الجهاز مربوط بالفعل بوحدة تحكم أخرى",
     "notConfiguredCU": "لم يتم تهيئة وحدة التحكم هذه بعد"
   },
   "currencies": {

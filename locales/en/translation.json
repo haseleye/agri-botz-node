@@ -217,10 +217,14 @@
     "terminatedSite": "This site is already terminated",
     "activatedDevice": "This device is already activated",
     "terminatedDevice": "This device is already terminated",
+    "missingSolenoid1": "Solenoid1 data is required",
     "missingSolenoid2": "Solenoid2 data is required",
+    "missingRelay1": "Relay1 data is required",
+    "missingRelay2": "Relay2 data is required",
     "incorrectSerial": "This Serial Number is not registered yet",
     "registeredSerial": "This Serial Number is already registered",
     "registered": "The product with the serial number {{serialNumber}} has been registered successfully",
+    "usedDevice": "This device is already linked with another control unit",
     "notConfiguredCU": "This Control Unit is not configured yet"
   },
   "currencies": {
