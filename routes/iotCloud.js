@@ -11,9 +11,9 @@ router.post('/delete-site', authorize('Api', ['User', 'Admin']), iotCloud.delete
 
 router.post('/register-control-unit', authorize('Api', ['Admin']), iotCloud.registerControlUnit);
 
-router.post('/configure-control-unit', authorize('Api', ['Admin']), iotCloud.configureControlUnit);
+router.post('/gear-control-unit', authorize('Api', ['Admin']), iotCloud.gearControlUnit);
 
-router.post('/commission-control-unit', authorize('Api', ['User', 'Admin']), iotCloud.commissionControlUnit);
+router.post('/configure-control-unit', authorize('Api', ['User', 'Admin']), iotCloud.configureControlUnit);
 
 router.post('/add-device', authorize('Api', ['Admin']), iotCloud.addDevice);
 

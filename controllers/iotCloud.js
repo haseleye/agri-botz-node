@@ -696,7 +696,7 @@ const registerControlUnit = async (req, res) => {
     }
 }
 
-const configureControlUnit = async (req, res) => {
+const gearControlUnit = async (req, res) => {
     try {
         const {serialNumber, deviceId, config} = await req.body;
 
@@ -848,7 +848,7 @@ const configureControlUnit = async (req, res) => {
     }
 }
 
-const commissionControlUnit = async (req, res) => {
+const configureControlUnit = async (req, res) => {
     try {
         const {serialNumber} = await req.body;
 
@@ -2895,8 +2895,8 @@ module.exports = {
     renameSite,
     deleteSite,
     registerControlUnit,
+    gearControlUnit,
     configureControlUnit,
-    commissionControlUnit,
     addDevice,
     updateDeviceGPS,
     addGadget,
