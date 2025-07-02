@@ -224,6 +224,7 @@
     "incorrectSerial": "This Serial Number is not registered yet",
     "registeredSerial": "This Serial Number is already registered",
     "registered": "The product with the serial number {{serialNumber}} has been registered successfully",
+    "configured": "Your device has been configured successfully, it will restart automatically and enter operation mode",
     "usedDevice": "This device is already linked with another control unit",
     "notConfiguredCU": "This Control Unit is not configured yet"
   },

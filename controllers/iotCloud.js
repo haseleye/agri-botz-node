@@ -887,6 +887,7 @@ const configureControlUnit = async (req, res) => {
                                 deviceId: controlUnit.deviceId,
                                 secretKey: device.secretKey,
                                 config: controlUnit.config,
+                                info: req.i18n.t('iot.configured'),
                             }
                         });
                     })
