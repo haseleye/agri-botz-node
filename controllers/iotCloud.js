@@ -76,7 +76,7 @@ const connect = (app) => {
 
 const connectionScheduler = (app) => {
     try {
-        const job = schedule.scheduleJob('*/15 * * * *',() => {
+        const job = schedule.scheduleJob('*/5 * * * *',() => {
             console.log('The job for automatic connection has run');
             Devices.find({isCloudConnected: false}, {_id: 1})
                 .then((devices) => {
