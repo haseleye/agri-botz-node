@@ -1,163 +1,39 @@
 const {ArduinoIoTCloud} = require('arduino-iot-js');
+const ArduinoIotClient = require('@arduino/arduino-iot-client');
+const rp = require('request-promise');
 const Users = require('../models/users');
 const Devices = require('../models/devices');
 const ControlUnits = require('../models/controlUnits');
 const Variables = require('../models/variables');
 const {isNumeric, isFloat} = require('../utils/numberUtils');
-const schedule = require('node-schedule');
 const {generateUUID} = require('../utils/codeGenerator');
 
-const connect = (app) => {
-    return new Promise( (myResolve, myReject) => {
-        Devices.find({isActive: true}, {_id: 1, secretKey: 1, isCloudConnected: 1})
-            .then((devices) => {
-                devices.map(async (device) => {
-                    await ArduinoIoTCloud.connect({
-                        deviceId: device._id,
-                        secretKey: device.secretKey,
-                        onDisconnect: async (message) => {
-                            console.log(`Device ID: ${device._id} disconnected from the IoT cloud`);
-                            console.log(message);
-                            app.set(device._id, undefined);
-                            await Devices.updateOne({_id: device._id}, {isCloudConnected: false})
-                                .catch((err) => {
-                                    console.error(`Failed to update the database with the IoT cloud disconnection status for device ID: ${device._id}`);
-                                    console.error(`Error received: ${err.toString()}`);
-                                });
-                        },
-                    })
-                        .then(async (mqttClient) => {
-                            app.set(device._id, mqttClient);
-                            console.log(`Device ID: ${device._id} connected to the IoT cloud`);
-                            if (!device.isCloudConnected) {
-                                await Devices.updateOne({_id: device._id}, {isCloudConnected: true})
-                                    .catch((err) => {
-                                        console.error(`Failed to update the database with the isCloudConnected status for device ID: ${device._id}`);
-                                        console.error('However variables attached to this device would work normally');
-                                        console.error('This status can be fixed manually, or automatically during the next system restart');
-                                        console.error(`Error received: ${err.toString()}`);
-                                    });}
-
-                            Variables.find({deviceId: device._id}, {name: 1, value: 1})
-                                .then((variables) => {
-                                    variables.map((variable) => {
-                                        mqttClient.onPropertyValue(variable.name, async (value) => {
-                                            console.log(value)
-                                            await Variables.updateOne({_id: variable._id}, {value})
-                                                .catch(err => {
-                                                    console.error(`Updates received from the IoT cloud failed to update the variable in the database`);
-                                                    console.error(`variable name: ${variable.name} with ID: ${variable.id}`);
-                                                    console.error(`Error received: ${err.toString()}`);
-                                                });
-                                        });
-                                    });
-                                })
-                                .catch((err) => {
-                                    console.error(`Failed to find and update variables linked to device ID: ${device._id} during system startup`);
-                                    console.error(`Error received: ${err.toString()}`);
-                                });
-                        })
-                        .catch(async (err) => {
-                            console.error(`Device ID: ${device._id} couldn't be connected to the IoT cloud`);
-                            console.error(err);
-                            if (device.isCloudConnected) {
-                                await Devices.updateOne({_id: device._id}, {isCloudConnected: false}).catch(err => {});
-                            }
-                        });
-                });
+const connectClient = () => {
+    return new Promise(async (myResolve, myReject) => {
+        const client = ArduinoIotClient.ApiClient.instance;
+        const oauth2 = client.authentications['oauth2'];
+        const clientId = process.env.CLOUD_CLIENT_ID;
+        const clientSecret = process.env.CLOUD_CLIENT_SECRET;
+        const options = {
+            method: 'POST',
+            url: 'https://api2.arduino.cc/iot/v1/clients/token',
+            headers: { 'content-type': 'application/x-www-form-urlencoded' },
+            json: true,
+            form: {
+                grant_type: 'client_credentials',
+                client_id: clientId,
+                client_secret: clientSecret,
+                audience: 'https://api2.arduino.cc/iot'
+            }
+        };
+        await rp(options)
+            .then((response) => {
+                oauth2.accessToken = response['access_token'];
+                const cloudApi = new ArduinoIotClient.PropertiesV2Api(client);
+                myResolve(cloudApi);
             })
             .catch((err) => {
-                console.error(`Failed to connect all the devices to the IoT cloud at the system startup`);
-                console.error(`Error received: ${err.toString()}`);
-                myReject(err.toString())
-            });
-    });
-}
-
-const connectionScheduler = (app) => {
-    try {
-        const job = schedule.scheduleJob('*/5 * * * *',() => {
-            console.log('The job for automatic connection has run');
-            Devices.find({isCloudConnected: false}, {_id: 1})
-                .then((devices) => {
-                    devices.map(async (device) => {
-                        if (device.isActive) {
-                            await connectDevice(app, device._id);
-                        }
-                        else {
-                            const mqttClient = app.get(device._id);
-                            if (mqttClient !== undefined) {
-                                await mqttClient.disconnect();
-                                app.set(device._id, undefined);
-                            }
-                        }
-
-                    })
-                })
-                .catch((err) => {
-                    console.error(err);
-                });
-        });
-    }
-    catch (err) {
-        console.error(err);
-    }
-}
-
-const connectDevice = (app, deviceId) => {
-    return new Promise( (myResolve, myReject) => {
-        Devices.findOne({_id: deviceId},{_id: 1, secretKey: 1})
-            .then( async (device) => {
-                await ArduinoIoTCloud.connect({
-                    deviceId: device._id,
-                    secretKey: device.secretKey,
-                    onDisconnect: async (message) => {
-                        console.log(`Device ID: ${device._id} disconnected from the IoT cloud`);
-                        console.log(message);
-                        app.set(device._id, undefined);
-                        await Devices.updateOne({_id: device._id}, {isCloudConnected: false})
-                            .catch((err) => {
-                                console.error(`Failed to update the database with the IoT cloud disconnection status for device ID: ${device._id}`);
-                                console.error(`Error received: ${err.toString()}`);
-                            });
-                    },
-                })
-                    .then(async (mqttClient) => {
-                        app.set(device._id, mqttClient);
-                        console.log(`Device ID: ${device._id} connected to the IoT cloud`);
-                        await Devices.updateOne({_id: device._id}, {isCloudConnected: true}).catch((err) => {});
-
-                        Variables.find({deviceId: device._id}, {name: 1, value: 1})
-                            .then((variables) => {
-                                variables.map((variable) => {
-                                    mqttClient.onPropertyValue(variable.name, async (value) => {
-                                        await Variables.updateOne({_id: variable._id}, {value})
-                                            .catch(err => {
-                                                console.error(`Updates received from the IoT cloud failed to update the variable in the database`);
-                                                console.error(`variable name: ${variable.name} with ID: ${variable.id}`);
-                                                console.error(`Error received: ${err.toString()}`);
-                                            });
-                                    });
-                                });
-                                myResolve();
-                            })
-                            .catch((err) => {
-                                console.error(`Failed to find and update variables while system activating device ID: ${device._id}`);
-                                console.error(`Error received: ${err.toString()}`);
-                                myReject(err.toString())
-                            });
-                    })
-                    .catch(async (err) => {
-                        console.error(`Device ID: ${device._id} couldn't be connected to the IoT cloud`);
-                        console.error(`Error received: ${err.toString()}`);
-                        myReject(err.toString())
-                    });
-
-            })
-            .catch((err) => {
-                console.error(`Device ID: ${device._id} couldn't be connected using the connectDevice()`);
-                console.error(`Error received: ${err.toString()}`);
-                myReject(err.toString());
+                myReject(err);
             });
     });
 }
@@ -924,9 +800,9 @@ const configureControlUnit = async (req, res) => {
 
 const addDevice = async (req, res) => {
     try {
-        const {deviceId, secretKey} = await req.body;
+        const {deviceId, secretKey, thingId} = await req.body;
 
-        if (deviceId === undefined || secretKey === undefined) {
+        if (deviceId === undefined || secretKey === undefined || thingId === undefined) {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.notComplete'),
@@ -934,7 +810,7 @@ const addDevice = async (req, res) => {
             });
         }
 
-        await Devices.create({_id: deviceId, secretKey})
+        await Devices.create({_id: deviceId, secretKey, thingId})
             .then(() => {
                 res.status(200).json({
                     status: "success",
@@ -1341,7 +1217,7 @@ const addVariable = async (req, res) => {
             });
         }
 
-        Devices.findOne({'_id': deviceId}, {userID: 1})
+        Devices.findOne({'_id': deviceId}, {thingId: 1, userID: 1})
             .then(async (device) => {
                 if (!device) {
                     return res.status(400).json({
@@ -1534,6 +1410,7 @@ const addVariable = async (req, res) => {
                     type,
                     value: variableValue,
                     deviceId,
+                    thingId: device.thingId,
                     userID: device.userID
                 };
                 await Variables.create(variableData)
@@ -1589,7 +1466,7 @@ const updateVariable = async (req, res) => {
         }
 
         await Variables.findOne({_id: variableId})
-            .then((variable) => {
+            .then(async (variable) => {
                 if (!variable) {
                     return res.status(400).json({
                         status: "failed",
@@ -1598,14 +1475,6 @@ const updateVariable = async (req, res) => {
                     });
                 }
                 else {
-                    const mqttClient = req.app.get(variable.deviceId);
-                    if (mqttClient === undefined) {
-                        return res.status(400).json({
-                            status: "failed",
-                            error: req.i18n.t('iot.notConnected', {deviceId: variable.deviceId}),
-                            message: {}
-                        });
-                    }
 
                     if (variable.userID !== userID) {
                         return res.status(401).json({
@@ -1619,7 +1488,7 @@ const updateVariable = async (req, res) => {
                     switch (variable.type.toString().toLowerCase()) {
                         case 'schedule':
                             let msk;
-                            const repeatEvery  =['does not repeat', 'hour', 'day', 'week', 'month', 'year'];
+                            const repeatEvery = ['does not repeat', 'hour', 'day', 'week', 'month', 'year'];
                             if (value.frm === undefined || !isNumeric(value.frm) || value.len === undefined || !isNumeric(value.len)
                                 || value.repeatEvery === undefined || !repeatEvery.includes(value.repeatEvery.toString().toLowerCase())) {
                                 return res.status(400).json({
@@ -1793,13 +1662,28 @@ const updateVariable = async (req, res) => {
                             break;
                     }
 
-                    mqttClient.sendProperty(variableName, variableValue)
-                        .then(() => {
-                            return res.status(200).json({
-                                status: "success",
-                                error: "",
-                                message: {}
-                            });
+                    const propertyValue = {
+                        value: variableValue
+                    };
+                    await connectClient()
+                        .then((cloudApi) => {
+                            cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
+                                .then(() => {
+                                    return res.status(200).json({
+                                        status: "success",
+                                        error: "",
+                                        message: {}
+                                    });
+                                })
+                                .catch((err) => {
+                                    res.status(500).json({
+                                        status: "failed",
+                                        error: req.i18n.t('general.internalError'),
+                                        message: {
+                                            info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                        }
+                                    });
+                                });
                         })
                         .catch((err) => {
                             res.status(500).json({
@@ -1831,64 +1715,6 @@ const updateVariable = async (req, res) => {
             }
         });
     }
-}
-
-const sysActivateDevice = (app, deviceId) => {
-    return new Promise( (myResolve, myReject) => {
-        Devices.findOne({_id: deviceId},{_id: 1, secretKey: 1})
-            .then( async (device) => {
-                await ArduinoIoTCloud.connect({
-                    deviceId: device._id,
-                    secretKey: device.secretKey,
-                    onDisconnect: async (message) => {
-                        console.log(`Device ID: ${device._id} disconnected from the IoT cloud`);
-                        console.log(message);
-                        app.set(device._id, undefined);
-                        await Devices.updateOne({_id: device._id}, {isCloudConnected: false})
-                            .catch((err) => {
-                                console.error(`Failed to update the database with the IoT cloud disconnection status for device ID: ${device._id}`);
-                                console.error(`Error received: ${err.toString()}`);
-                            });
-                    },
-                })
-                    .then(async (mqttClient) => {
-                        app.set(device._id, mqttClient);
-                        console.log(`Device ID: ${device._id} connected to the IoT cloud`);
-                        await mqttClient.sendProperty("isActive", true);
-                        await Devices.updateOne({_id: device._id}, {isCloudConnected: true, isActive: true}).catch((err) => {});
-
-                        Variables.find({deviceId: device._id}, {name: 1, value: 1})
-                            .then((variables) => {
-                                variables.map((variable) => {
-                                    mqttClient.onPropertyValue(variable.name, async (value) => {
-                                        await Variables.updateOne({_id: variable._id}, {value})
-                                            .catch(err => {
-                                                console.error(`Updates received from the IoT cloud failed to update the variable in the database`);
-                                                console.error(`variable name: ${variable.name} with ID: ${variable.id}`);
-                                                console.error(`Error received: ${err.toString()}`);
-                                            });
-                                    });
-                                });
-                                myResolve();
-                            })
-                            .catch((err) => {
-                                console.error(`Failed to find and update variables while system activating device ID: ${device._id}`);
-                                console.error(`Error received: ${err.toString()}`);
-                                myReject(err.toString());
-                            });
-                    })
-                    .catch(async (err) => {
-                        console.error(`Device ID: ${device._id} couldn't be connected to the IoT cloud`);
-                        console.error(`Error received: ${err.toString()}`);
-                        myReject(err.toString());
-                    });
-            })
-            .catch((err) => {
-                console.error(`Device ID: ${device._id} couldn't be activated using the sysActivateDevice()`);
-                console.error(`Error received: ${err.toString()}`);
-                myReject(err.toString());
-            });
-    });
 }
 
 const activateSite = async (req, res) => {
@@ -1951,15 +1777,68 @@ const activateSite = async (req, res) => {
                 await Users.updateOne({'sites.id': siteId}, {'sites.$.isActive' : true, 'sites.$.activatedAt' : new Date()})
                     .then(async () => {
                         const devices = [...devicesSet];
-                        devices.map(async (device) => {
-                            await sysActivateDevice(req.app, device).catch((err) => {});
-                        });
+                        Devices.updateMany({_id: devices}, {isActive: true})
+                            .then( () => {
+                                Variables.find({deviceId: devices, name: 'isActive'}, {_id: 1, thingId: 1, value: 1})
+                                    .then(async (variables) => {
+                                        await Variables.updateMany({deviceId: devices, name: 'isActive'}, {value: true})
+                                            .then(async () => {
+                                                await connectClient()
+                                                    .then(async (cloudApi) => {
+                                                        for (let i = 0; i < variables.length; i++) {
+                                                            const thingId = variables[i].thingId;
+                                                            const variableId = variables[i]._id;
+                                                            const propertyValue = {
+                                                                value: true
+                                                            };
+                                                            await cloudApi.propertiesV2Publish(thingId, variableId, propertyValue);
+                                                        }
 
-                        res.status(200).json({
-                            status: "success",
-                            error: "",
-                            message: {}
-                        });
+                                                        res.status(200).json({
+                                                            status: "success",
+                                                            error: "",
+                                                            message: {}
+                                                        });
+                                                    })
+                                                    .catch((err) => {
+                                                        res.status(500).json({
+                                                            status: "failed",
+                                                            error: req.i18n.t('general.internalError'),
+                                                            message: {
+                                                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                            }
+                                                        });
+                                                    });
+                                            })
+                                            .catch((err) => {
+                                                res.status(500).json({
+                                                    status: "failed",
+                                                    error: req.i18n.t('general.internalError'),
+                                                    message: {
+                                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                    }
+                                                });
+                                            });
+                                    })
+                                    .catch((err) => {
+                                        res.status(500).json({
+                                            status: "failed",
+                                            error: req.i18n.t('general.internalError'),
+                                            message: {
+                                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                            }
+                                        });
+                                    });
+                            })
+                            .catch((err) => {
+                                res.status(500).json({
+                                    status: "failed",
+                                    error: req.i18n.t('general.internalError'),
+                                    message: {
+                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                    }
+                                });
+                            });
                     })
                     .catch((err) => {
                         res.status(500).json({
@@ -2050,22 +1929,59 @@ const deactivateSite = async (req, res) => {
 
                 await Users.updateOne({'sites.id': siteId}, {'sites.$.isActive' : false, 'sites.$.deactivatedAt' : new Date()})
                     .then(async () => {
-                        const deviceIdList = [...deviceIdSet];
-                        await Devices.updateMany({_id: deviceIdList}, {isActive: false, isCloudConnected: false})
-                            .then(async () => {
+                        const devices = [...deviceIdSet];
+                        await Devices.updateMany({_id: devices}, {isActive: false})
+                            .then( () => {
+                                Variables.find({deviceId: devices, name: 'isActive'}, {_id: 1, thingId: 1, value: 1})
+                                    .then(async (variables) => {
+                                        await Variables.updateMany({deviceId: devices, name: 'isActive'}, {value: false})
+                                            .then(async () => {
+                                                await connectClient()
+                                                    .then(async (cloudApi) => {
+                                                        for (let i = 0; i < variables.length; i++) {
+                                                            const thingId = variables[i].thingId;
+                                                            const variableId = variables[i]._id;
+                                                            const propertyValue = {
+                                                                value: false
+                                                            };
+                                                            await cloudApi.propertiesV2Publish(thingId, variableId, propertyValue);
+                                                        }
 
-                                deviceIdList.map(async (deviceId) => {
-                                    const mqttClient = req.app.get(deviceId);
-                                    if (mqttClient !== undefined) {
-                                        await mqttClient.sendProperty("isActive", false);
-                                    }
-                                });
-
-                                res.status(200).json({
-                                    status: "success",
-                                    error: "",
-                                    message: {}
-                                });
+                                                        res.status(200).json({
+                                                            status: "success",
+                                                            error: "",
+                                                            message: {}
+                                                        });
+                                                    })
+                                                    .catch((err) => {
+                                                        res.status(500).json({
+                                                            status: "failed",
+                                                            error: req.i18n.t('general.internalError'),
+                                                            message: {
+                                                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                            }
+                                                        });
+                                                    });
+                                            })
+                                            .catch((err) => {
+                                                res.status(500).json({
+                                                    status: "failed",
+                                                    error: req.i18n.t('general.internalError'),
+                                                    message: {
+                                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                    }
+                                                });
+                                            });
+                                    })
+                                    .catch((err) => {
+                                        res.status(500).json({
+                                            status: "failed",
+                                            error: req.i18n.t('general.internalError'),
+                                            message: {
+                                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                            }
+                                        });
+                                    });
                             })
                             .catch((err) => {
                                 res.status(500).json({
@@ -2132,10 +2048,14 @@ const terminateSite = async (req, res) => {
 
                 const deviceIdSet = new Set;
                 let isTerminated = false;
+                let isActive = false;
                 user.sites.map((site) => {
                     if (site.id === siteId) {
                         if (site.isTerminated) {
                             isTerminated = true;
+                        }
+                        else if (site.isActive) {
+                            isActive = true;
                         }
                         else {
                             site.gadgets.map((gadget) => {
@@ -2151,28 +2071,70 @@ const terminateSite = async (req, res) => {
                         message: {}
                     });
                 }
+                if (isActive) {
+                    return res.status(400).json({
+                        status: "failed",
+                        error: req.i18n.t('iot.activeSite'),
+                        message: {}
+                    });
+                }
 
-                const siteUpdate = {'sites.$.isActive' : false, 'sites.$.isTerminated' : true, 'sites.$.terminatedAt' : new Date()}
+                const siteUpdate = {'sites.$.isTerminated' : true, 'sites.$.terminatedAt' : new Date()}
                 await Users.updateOne({'sites.id': siteId}, siteUpdate)
                     .then(async () => {
-                        const deviceIdList = [...deviceIdSet];
-                        const deviceUpdate = {isActive: false, isCloudConnected: false, isTerminated: true};
-                        await Devices.updateMany({_id: deviceIdList}, deviceUpdate)
-                            .then(async () => {
+                        const devices = [...deviceIdSet];
+                        await Devices.updateMany({_id: devices}, {isTerminated: true})
+                            .then( () => {
+                                Variables.find({deviceId: devices, name: 'isTerminated'}, {_id: 1, thingId: 1, value: 1})
+                                    .then(async (variables) => {
+                                        await Variables.updateMany({deviceId: devices, name: 'isTerminated'}, {value: true})
+                                            .then(async () => {
+                                                await connectClient()
+                                                    .then(async (cloudApi) => {
+                                                        for (let i = 0; i < variables.length; i++) {
+                                                            const thingId = variables[i].thingId;
+                                                            const variableId = variables[i]._id;
+                                                            const propertyValue = {
+                                                                value: true
+                                                            };
+                                                            await cloudApi.propertiesV2Publish(thingId, variableId, propertyValue);
+                                                        }
 
-                                deviceIdList.map(async (deviceId) => {
-                                    const mqttClient = req.app.get(deviceId);
-                                    if (mqttClient !== undefined) {
-                                        await mqttClient.sendProperty("isTerminated", true);
-                                        await mqttClient.sendProperty("isActive", false);
-                                    }
-                                });
-
-                                res.status(200).json({
-                                    status: "success",
-                                    error: "",
-                                    message: {}
-                                });
+                                                        res.status(200).json({
+                                                            status: "success",
+                                                            error: "",
+                                                            message: {}
+                                                        });
+                                                    })
+                                                    .catch((err) => {
+                                                        res.status(500).json({
+                                                            status: "failed",
+                                                            error: req.i18n.t('general.internalError'),
+                                                            message: {
+                                                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                            }
+                                                        });
+                                                    });
+                                            })
+                                            .catch((err) => {
+                                                res.status(500).json({
+                                                    status: "failed",
+                                                    error: req.i18n.t('general.internalError'),
+                                                    message: {
+                                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                    }
+                                                });
+                                            });
+                                    })
+                                    .catch((err) => {
+                                        res.status(500).json({
+                                            status: "failed",
+                                            error: req.i18n.t('general.internalError'),
+                                            message: {
+                                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                            }
+                                        });
+                                    });
                             })
                             .catch((err) => {
                                 res.status(500).json({
@@ -2227,7 +2189,7 @@ const activateDevice = async (req, res) => {
             });
         }
 
-        await Devices.findOne({_id: deviceId}, {_id: 1, secretKey: 1, isActive: 1, isTerminated: 1, userID: 1})
+        await Devices.findOne({_id: deviceId}, {_id: 1, isActive: 1, isTerminated: 1, userID: 1})
             .then(async (device) => {
                 if (!device) {
                     return res.status(400).json({
@@ -2261,41 +2223,22 @@ const activateDevice = async (req, res) => {
                     });
                 }
 
-                await ArduinoIoTCloud.connect({
-                    deviceId: device._id,
-                    secretKey: device.secretKey,
-                    onDisconnect: async (message) => {
-                        console.log(`Device ID: ${device._id} disconnected from the IoT cloud`);
-                        console.log(message);
-                        req.app.set(device._id, undefined);
-                        await Devices.updateOne({_id: device._id}, {isCloudConnected: false})
-                            .catch(err => {
-                                console.error(`Failed to update the database with the IoT cloud disconnection status for device ID: ${device._id}`);
-                                console.error(`Error received: ${err.toString()}`);
-                            });
-                    },
-                })
-                    .then(async (mqttClient) => {
-                        req.app.set(device._id, mqttClient);
-                        console.log(`Device ID: ${device._id} connected to the IoT cloud`);
-                        Variables.find({deviceId: device._id}, {name: 1, value: 1})
-                            .then(async (variables) => {
-                                variables.map((variable) => {
-                                    mqttClient.onPropertyValue(variable.name, async (value) => {
-                                        await Variables.updateOne({_id: variable._id}, {value})
-                                            .catch(err => {
-                                                console.error(`Updates received from the IoT cloud failed to update the variable in the database`);
-                                                console.error(`variable name: ${variable.name} with ID: ${variable.id}`);
-                                                console.error(`Error received: ${err.toString()}`);
-                                            });
-                                    });
-                                });
+                Devices.updateOne({_id: device._id}, {isActive: true})
+                    .then( () => {
+                        Variables.findOne({deviceId: device._id, name: 'isActive'}, {_id: 1, thingId: 1, value: 1})
+                            .then(async (variable) => {
+                                await Variables.updateOne({deviceId: device._id, name: 'isActive'}, {value: true})
+                                    .then(async () => {
+                                        await connectClient()
+                                            .then(async (cloudApi) => {
+                                                const thingId = variable.thingId;
+                                                const variableId = variable._id;
+                                                const propertyValue = {
+                                                    value: true
+                                                };
+                                                await cloudApi.propertiesV2Publish(thingId, variableId, propertyValue);
 
-                                await Devices.updateOne({_id: device._id}, {isActive: true, isCloudConnected: true})
-                                    .then(() => {
-                                        mqttClient.sendProperty("isActive", true)
-                                            .then(() => {
-                                                return res.status(200).json({
+                                                res.status(200).json({
                                                     status: "success",
                                                     error: "",
                                                     message: {}
@@ -2320,10 +2263,9 @@ const activateDevice = async (req, res) => {
                                             }
                                         });
                                     });
-
                             })
                             .catch((err) => {
-                                return res.status(500).json({
+                                res.status(500).json({
                                     status: "failed",
                                     error: req.i18n.t('general.internalError'),
                                     message: {
@@ -2331,7 +2273,6 @@ const activateDevice = async (req, res) => {
                                     }
                                 });
                             });
-
                     })
                     .catch((err) => {
                         res.status(500).json({
@@ -2376,7 +2317,7 @@ const deactivateDevice = async (req, res) => {
             });
         }
 
-        await Devices.findOneAndUpdate({_id: deviceId}, {isActive: false, isCloudConnected: false})
+        await Devices.findOne({_id: deviceId}, {_id: 1, isActive: 1, isTerminated: 1})
             .then(async (device) => {
                 if (!device) {
                     return res.status(400).json({
@@ -2386,33 +2327,83 @@ const deactivateDevice = async (req, res) => {
                     });
                 }
 
-                const mqttClient = req.app.get(deviceId);
-                if (mqttClient !== undefined) {
-                    await mqttClient.sendProperty("isActive", false)
-                        .then(async () => {
-                            return res.status(200).json({
-                                status: "success",
-                                error: "",
-                                message: {}
-                            });
-                        })
-                        .catch((err) => {
-                            res.status(500).json({
-                                status: "failed",
-                                error: req.i18n.t('general.internalError'),
-                                message: {
-                                    info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
-                                }
-                            });
-                        });
-                }
-                else {
-                    res.status(200).json({
-                        status: "success",
-                        error: "",
+                if (device.isTerminated) {
+                    return res.status(400).json({
+                        status: "failed",
+                        error: req.i18n.t('iot.terminatedDevice'),
                         message: {}
                     });
                 }
+
+                if (!device.isActive) {
+                    return res.status(400).json({
+                        status: "failed",
+                        error: req.i18n.t('iot.deactivatedDevice'),
+                        message: {}
+                    });
+                }
+
+                Devices.updateOne({_id: device._id}, {isActive: false})
+                    .then( () => {
+                        Variables.findOne({deviceId: device._id, name: 'isActive'}, {_id: 1, thingId: 1, value: 1})
+                            .then(async (variable) => {
+                                await Variables.updateOne({deviceId: device._id, name: 'isActive'}, {value: false})
+                                    .then(async () => {
+                                        await connectClient()
+                                            .then(async (cloudApi) => {
+                                                const thingId = variable.thingId;
+                                                const variableId = variable._id;
+                                                const propertyValue = {
+                                                    value: false
+                                                };
+                                                await cloudApi.propertiesV2Publish(thingId, variableId, propertyValue);
+
+                                                res.status(200).json({
+                                                    status: "success",
+                                                    error: "",
+                                                    message: {}
+                                                });
+                                            })
+                                            .catch((err) => {
+                                                console.log(err)
+                                                res.status(500).json({
+                                                    status: "failed",
+                                                    error: req.i18n.t('general.internalError'),
+                                                    message: {
+                                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                    }
+                                                });
+                                            });
+                                    })
+                                    .catch((err) => {
+                                        res.status(500).json({
+                                            status: "failed",
+                                            error: req.i18n.t('general.internalError'),
+                                            message: {
+                                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                            }
+                                        });
+                                    });
+                            })
+                            .catch((err) => {
+                                res.status(500).json({
+                                    status: "failed",
+                                    error: req.i18n.t('general.internalError'),
+                                    message: {
+                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                    }
+                                });
+                            });
+                    })
+                    .catch((err) => {
+                        res.status(500).json({
+                            status: "failed",
+                            error: req.i18n.t('general.internalError'),
+                            message: {
+                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                            }
+                        });
+                    });
             })
             .catch((err) => {
                 res.status(500).json({
@@ -2447,8 +2438,7 @@ const terminateDevice = async (req, res) => {
             });
         }
 
-        const update = {isActive: false, isCloudConnected: false, isTerminated: true};
-        await Devices.findOneAndUpdate({_id: deviceId}, update, {projection: {_id: 1}})
+        await Devices.findOne({_id: deviceId}, {_id: 1, isActive: 1, isTerminated: 1})
             .then(async (device) => {
                 if (!device) {
                     return res.status(400).json({
@@ -2458,19 +2448,92 @@ const terminateDevice = async (req, res) => {
                     });
                 }
 
-                const mqttClient = req.app.get(deviceId);
-                if (mqttClient !== undefined) {
-                    await mqttClient.sendProperty("isTerminated", true);
-                    await mqttClient.sendProperty("isActive", false);
+                if (device.isTerminated) {
+                    return res.status(400).json({
+                        status: "failed",
+                        error: req.i18n.t('iot.terminatedDevice'),
+                        message: {}
+                    });
                 }
 
-                res.status(200).json({
-                    status: "success",
-                    error: "",
-                    message: {}
-                });
+                if (device.isActive) {
+                    return res.status(400).json({
+                        status: "failed",
+                        error: req.i18n.t('iot.activeDevice'),
+                        message: {}
+                    });
+                }
+
+                Devices.updateOne({_id: device._id}, {isTerminated: true})
+                    .then( () => {
+                        Variables.findOne({deviceId: device._id, name: 'isTerminated'}, {_id: 1, thingId: 1, value: 1})
+                            .then(async (variable) => {
+                                await Variables.updateOne({deviceId: device._id, name: 'isTerminated'}, {value: true})
+                                    .then(async () => {
+                                        await connectClient()
+                                            .then(async (cloudApi) => {
+                                                const thingId = variable.thingId;
+                                                const variableId = variable._id;
+                                                const propertyValue = {
+                                                    value: true
+                                                };
+                                                await cloudApi.propertiesV2Publish(thingId, variableId, propertyValue);
+
+                                                res.status(200).json({
+                                                    status: "success",
+                                                    error: "",
+                                                    message: {}
+                                                });
+                                            })
+                                            .catch((err) => {
+                                                res.status(500).json({
+                                                    status: "failed",
+                                                    error: req.i18n.t('general.internalError'),
+                                                    message: {
+                                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                    }
+                                                });
+                                            });
+                                    })
+                                    .catch((err) => {
+                                        res.status(500).json({
+                                            status: "failed",
+                                            error: req.i18n.t('general.internalError'),
+                                            message: {
+                                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                            }
+                                        });
+                                    });
+                            })
+                            .catch((err) => {
+                                res.status(500).json({
+                                    status: "failed",
+                                    error: req.i18n.t('general.internalError'),
+                                    message: {
+                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                    }
+                                });
+                            });
+                    })
+                    .catch((err) => {
+                        res.status(500).json({
+                            status: "failed",
+                            error: req.i18n.t('general.internalError'),
+                            message: {
+                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                            }
+                        });
+                    });
             })
-            .catch();
+            .catch((err) => {
+                res.status(500).json({
+                    status: "failed",
+                    error: req.i18n.t('general.internalError'),
+                    message: {
+                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                    }
+                });
+            });
     }
     catch (err) {
         res.status(500).json({
@@ -2742,7 +2805,6 @@ const getDeviceInfo = async (req, res) => {
                         siteName: "",
                         gps: device.gps,
                         isActive: device.isActive,
-                        isConnected: device.isCloudConnected,
                         isTerminated: device.isTerminated
                     };
                 }
@@ -2888,10 +2950,6 @@ const createScheduleMask = (repeatEvery, intervalValue = 1, selectedDays = null,
 }
 
 module.exports = {
-    connect,
-    updateVariable,
-    connectDevice,
-    connectionScheduler,
     addSite,
     renameSite,
     deleteSite,
@@ -2903,6 +2961,7 @@ module.exports = {
     addGadget,
     renameGadget,
     addVariable,
+    updateVariable,
     activateSite,
     deactivateSite,
     terminateSite,

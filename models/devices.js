@@ -4,15 +4,12 @@ const {Schema, model} = mongoose;
 const deviceSchema = new Schema({
     _id: String,
     secretKey: String,
+    thingId: String,
     userID: String,
     siteId: String,
     gps: {
         lat: Number,
         long: Number,
-    },
-    isCloudConnected: {
-        type: Boolean,
-        default: false
     },
     controlUnitId: String,
     isActive: {

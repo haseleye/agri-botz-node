@@ -1272,7 +1272,7 @@ const updateSenderName = async (req, res) => {
             })
         }
         await getUserById(id, {sender: 1, isActive: 1})
-            .then((user) => {
+            .then(async (user) => {
                 const {isActive: {isSuspended}} = user;
                 if (isSuspended) {
                     return res.status(403).json({
@@ -1289,7 +1289,7 @@ const updateSenderName = async (req, res) => {
                     })
                 }
                 user.sender.name = senderName.trim();
-                user.save()
+                await user.save()
                     .then(() => {
                         return res.status(205)
                             .json({
@@ -1357,10 +1357,10 @@ const verifySenderName = async (req, res) => {
                     })
                 }
                 verifyDomainName(domainName)
-                    .then((msg) => {
+                    .then(async (msg) => {
                         user.sender.isVerified = true;
                         user.sender.domainName = domainName;
-                        user.save()
+                        await user.save()
                             .then(() => {
                                 return res.status(205).json({
                                     status: "success",
@@ -1979,7 +1979,7 @@ const checkFund = (userID, products) => {
             plan = 'PAYG';
             user.plan = 'PAYG';
             user.subscription = {};
-            user.save();
+            await user.save();
         }
         let {savingPlan: {credit}} = subscription;
         if (credit !== undefined) {

@@ -12,7 +12,6 @@ const logger = require('morgan');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
-const iotCloud = require('./controllers/iotCloud');
 
 const {i18next, i18nextMiddleware} = require('./controllers/localization');
 const {authorize} = require('./middleware/auth');
@@ -78,8 +77,6 @@ if (sslInstalled) {
   connectDB()
       .then(() => {
         httpsServer.listen(port, onListening).on('error', onError);
-        iotCloud.connectionScheduler(app);
-        iotCloud.connect(app).catch((err) => console.error(err));
       });
 }
 else {
@@ -87,8 +84,6 @@ else {
   connectDB()
       .then(() => {
         httpServer.listen(port, onListening).on('error', onError);
-        iotCloud.connectionScheduler(app);
-        iotCloud.connect(app).catch((err) => console.error(err));
       });
 }
 
