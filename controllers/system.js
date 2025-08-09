@@ -52,4 +52,19 @@ const updatePersonImagesCallback = async (req, res) => {
     }
 }
 
-module.exports = {updatePersonImagesCB, updatePersonImagesCallback}
+const arduinoWebhook = async (req, res) => {
+    try {
+        const data = await req.body;
+        console.log('Received data from Arduino Webhook:')
+        console.log(data);
+    }
+    catch (err) {
+        console.log('Error while calling Arduino Webhook');
+        console.log(err.toString());
+    }
+    finally {
+        res.status(200).send('Data received successfully!');
+    }
+}
+
+module.exports = {updatePersonImagesCB, updatePersonImagesCallback, arduinoWebhook}
