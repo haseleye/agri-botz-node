@@ -1,7 +1,7 @@
 const {ArduinoIoTCloud} = require('arduino-iot-js');
 const ArduinoIotClient = require('@arduino/arduino-iot-client');
 const rp = require('request-promise');
-const Users = require('../models/users');
+const {userModel: Users, GADGET_TYPES} = require('../models/users');
 const Devices = require('../models/devices');
 const ControlUnits = require('../models/controlUnits');
 const Variables = require('../models/variables');
@@ -936,7 +936,7 @@ const addGadget = async (req, res) => {
             });
         }
 
-        if (!['solenoid valve', 'sensor'].includes(type.toLowerCase())) {
+        if (!GADGET_TYPES[0].includes(type.toString().toUpperCase())) {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.notCorrect'),
@@ -1000,7 +1000,7 @@ const addGadget = async (req, res) => {
                             .then(() => {
                                 user.sites.map(async (site) => {
                                     if (site.id === siteId) {
-                                        const gadget = {id: generateUUID(), type, name, deviceId};
+                                        const gadget = {id: generateUUID(), type: type.toString().toUpperCase(), name, deviceId};
                                         site.gadgets.push(gadget);
 
                                         await user.save()
@@ -2719,12 +2719,24 @@ const getSiteInfo = async (req, res) => {
                     }
                 }
 
+                const sites = user.sites.map((site) => {
+                    return site.gadgets.map((gadget) => {
+                        const newGadget = {};
+                        newGadget.id = gadget.id;
+                        newGadget.type = gadget.type;
+                        newGadget.name = gadget.name;
+                        newGadget.label = req.i18n.t(`iot.gadgetLabel.${gadget.type}`);
+                        newGadget.deviceId = gadget.deviceId;
+                        return newGadget;
+                    });
+                });
+
                 res.status(200).json({
                     status: "success",
                     error: "",
                     message: {
                         userInfo,
-                        siteInfo: user.sites
+                        siteInfo: sites
                     }
                 })
             })

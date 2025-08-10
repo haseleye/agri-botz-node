@@ -229,7 +229,19 @@
     "registered": "The product with the serial number {{serialNumber}} has been registered successfully",
     "configured": "Your device has been configured successfully, it will restart automatically and enter operation mode",
     "usedDevice": "This device is already linked with another control unit",
-    "notConfiguredCU": "This Control Unit is not geared yet"
+    "notConfiguredCU": "This Control Unit is not geared yet",
+    "gadgetLabel": {
+      "SOIL_N": "Soil Nitrogen Sensor",
+      "SOIL_P": "Soil Phosphorus Sensor",
+      "SOIL_K": "Soil Potassium Sensor",
+      "SOIL_PH": "Soil pH Sensor",
+      "SOIL_EC": "Soil Salinity Sensor",
+      "SOIL_TEMP": "Soil Temperature Sensor",
+      "SOIL_MOISTURE": "Soil Moisture Sensor",
+      "AIR_TEMP": "Air Temperature Sensor",
+      "AIR_HUMIDITY": "Air Humidity Sensor",
+      "WATER_VALVE": "Water Valve"
+    }
   },
   "currencies": {
     "USD": "$",

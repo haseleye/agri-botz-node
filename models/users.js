@@ -2,6 +2,33 @@ const {Schema, model} = require('mongoose');
 const bcrypt = require('bcrypt');
 const mongoose = require("mongoose");
 
+const GADGET_TYPES = [[
+    "SOIL_N",
+    "SOIL_P",
+    "SOIL_K",
+    "SOIL_PH",
+    "SOIL_EC",
+    "SOIL_TEMP",
+    "SOIL_MOISTURE",
+    "AIR_TEMP",
+    "AIR_HUMIDITY",
+    "WATER_VALVE",
+    "WATER_VALVE"
+],
+    [
+    "soilN",
+    "soilP",
+    "soilK",
+    "soilPh",
+    "soilEc",
+    "soilTemp",
+    "soilMoisture",
+    "airTemp",
+    "airHumidity",
+    "solenoid1State",
+    "solenoid2State"
+]];
+
 const userSchema = new Schema({
     firstName: {
         type: String,
@@ -59,7 +86,7 @@ const userSchema = new Schema({
                     type: {
                         type: String,
                         enum: {
-                            values: ['solenoid valve', 'sensor']
+                            values: GADGET_TYPES[0]
                         }
                     },
                     name: String,
@@ -220,5 +247,5 @@ userSchema.methods.comparePassword = function(candidatePassword, cb) {
 
 const userModel = model('user', userSchema);
 
-module.exports = userModel;
+module.exports = {userModel, GADGET_TYPES};
 

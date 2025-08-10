@@ -13,7 +13,8 @@ const variableSchema = new Schema({
     value: Object,
     deviceId: String,
     thingId: String,
-    userID: String
+    userID: String,
+    response: Object
 })
 
 const variableModel = model('variable', variableSchema);
