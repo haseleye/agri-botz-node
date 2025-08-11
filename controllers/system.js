@@ -2,6 +2,7 @@ const debug = require('debug');
 const errorLog = debug('app-system:error');
 const User = require("./users");
 const Variables = require('../models/variables');
+const DataLoggers = require('../models/dataLoggers');
 
 const updatePersonImagesCB = async (req, res) => {
     try {
@@ -56,9 +57,14 @@ const updatePersonImagesCallback = async (req, res) => {
 const arduinoWebhook = async (req, res) => {
     try {
         const data = await req.body;
-        console.log('Received data from Arduino Webhook:')
-        console.log(data);
-        await Variables.updateOne({_id: '57615007-4dab-41e4-a794-ff0470d2391f'}, {response: data});
+        const deviceId = data.device_id;
+        const variableId = data.values[0].id;
+        const variableName = data.values[0].name;
+        const value = data.values[0].value;
+        const updatedAt = data.values[0].updated_at;
+        const response = data;
+        await DataLoggers.create({variableId, variableName, deviceId, value, updatedAt, response});
+        // await Variables.updateOne({_id: '57615007-4dab-41e4-a794-ff0470d2391f'}, {response: data});
     }
     catch (err) {
         console.log('Error while calling Arduino Webhook');
