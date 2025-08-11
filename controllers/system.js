@@ -58,7 +58,7 @@ const arduinoWebhook = async (req, res) => {
         const data = await req.body;
         console.log('Received data from Arduino Webhook:')
         console.log(data);
-        await Variables.updateOne({_id: data.values.id}, {response: data});
+        await Variables.updateOne({_id: '57615007-4dab-41e4-a794-ff0470d2391f'}, {response: data});
     }
     catch (err) {
         console.log('Error while calling Arduino Webhook');
