@@ -5,11 +5,13 @@ const dataLoggerSchema = new Schema({
     variableId: String,
     variableName: String,
     deviceId: String,
+    eventId: String,
     value: Object,
     updatedAt: String,
     response: Object
 });
 
+dataLoggerSchema.index({deviceId: 1, eventId: 1}, {unique: true});
 const dataLoggerModel = model('data_logger', dataLoggerSchema);
 
 module.exports = dataLoggerModel;
