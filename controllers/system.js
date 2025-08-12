@@ -62,8 +62,10 @@ const arduinoWebhook = async (req, res) => {
         const eventId = data.event_id;
         const dataLoggerList = [];
         let dataLogger = {};
+        const dataUpdateList = [];
+        let dataUpdate = {};
 
-        const dataLoggers = await DataLoggers.find({deviceId}, {variableId: 1, eventId: 1, value: 1});
+        // const dataLoggers = await DataLoggers.find({deviceId}, {variableId: 1, eventId: 1, value: 1});
         data.values.map(async (variable) => {
             dataLogger.variableId = variable.id;
             dataLogger.variableName = variable.name;
@@ -74,14 +76,21 @@ const arduinoWebhook = async (req, res) => {
             dataLogger.type = index === -1 ? "NONE" : GADGET_TYPES[0][index];
             dataLogger.updatedAt = variable.updated_at;
             dataLogger.response = data;
-            // await DataLoggers.create(dataLogger);
             dataLoggerList.push(dataLogger);
             dataLogger = {};
-        })
 
-        console.log(dataLoggerList);
+            dataUpdate.variableId = variable.id;
+            dataUpdate.value = variable.value;
+            dataUpdateList.push(dataUpdate);
+            dataUpdate = {};
+        });
+
         await DataLoggers.create(dataLoggerList);
-        // await Variables.updateOne({_id: '57615007-4dab-41e4-a794-ff0470d2391f'}, {response: data});
+        
+        dataUpdateList.map(async (update) => {
+            await Variables.updateOne({_id: update.variableId}, {value: update.value});
+        });
+
     }
     catch (err) {
         console.log('Error while processing Arduino Webhook data');
