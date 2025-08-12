@@ -78,6 +78,7 @@ const arduinoWebhook = async (req, res) => {
             dataLoggerList.push(dataLogger);
         })
 
+        console.log(dataLoggerList);
         await DataLoggers.create(dataLoggerList);
         // await Variables.updateOne({_id: '57615007-4dab-41e4-a794-ff0470d2391f'}, {response: data});
     }
