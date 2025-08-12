@@ -4,20 +4,14 @@ const {Schema, model} = mongoose;
 const dataLoggerSchema = new Schema({
     variableId: String,
     variableName: String,
-    deviceId: {
-        type: String,
-        required: true
-    },
-    eventId: {
-        type: String,
-        required: true
-    },
+    deviceId: String,
+    eventId: String,
     value: Object,
+    type: String,
     updatedAt: String,
     response: Object
 });
 
-dataLoggerSchema.index({eventId: 1}, {unique: true});
 const dataLoggerModel = model('data_logger', dataLoggerSchema);
 
 module.exports = dataLoggerModel;

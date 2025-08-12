@@ -1,8 +1,9 @@
 const debug = require('debug');
 const errorLog = debug('app-system:error');
 const User = require("./users");
-const Variables = require('../models/variables');
 const DataLoggers = require('../models/dataLoggers');
+const {GADGET_TYPES} = require('../models/users');
+const Variables = require('../models/variables');
 
 const updatePersonImagesCB = async (req, res) => {
     try {
@@ -59,16 +60,32 @@ const arduinoWebhook = async (req, res) => {
         const data = await req.body;
         const deviceId = data.device_id;
         const eventId = data.event_id;
-        const variableId = data.values[0].id;
-        const variableName = data.values[0].name;
-        const value = data.values[0].value;
-        const updatedAt = data.values[0].updated_at;
-        const response = data;
-        await DataLoggers.create({variableId, variableName, deviceId, eventId, value, updatedAt, response});
+        const dataLoggerList = [];
+        const dataLogger = {};
+
+        const dataLoggers = await DataLoggers.find({deviceId}, {variableId: 1, eventId: 1, value: 1});
+        data.values.map((variable) => {
+            const variableId = variable.id;
+            const foundLogger = dataLoggers.find((logger) => logger.variableId === variableId && logger.eventId === eventId);
+            if (foundLogger === undefined) {
+                dataLogger.variableName = variable.name;
+                dataLogger.variableId = variableId;
+                dataLogger.deviceId = deviceId;
+                dataLogger.eventId = eventId;
+                dataLogger.value = variable.value;
+                const index = GADGET_TYPES[1].indexOf('variable.name');
+                dataLogger.type = index === -1 ? "NONE" : GADGET_TYPES[0][index];
+                dataLogger.updatedAt = variable.updated_at;
+                dataLogger.response = data;
+                dataLoggerList.push(dataLogger);
+            }
+        })
+
+        await DataLoggers.create(dataLoggerList);
         // await Variables.updateOne({_id: '57615007-4dab-41e4-a794-ff0470d2391f'}, {response: data});
     }
     catch (err) {
-        console.log('Error while calling Arduino Webhook');
+        console.log('Error while processing Arduino Webhook data');
         console.log(err.toString());
     }
     finally {
