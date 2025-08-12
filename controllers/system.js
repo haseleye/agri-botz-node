@@ -66,19 +66,16 @@ const arduinoWebhook = async (req, res) => {
         const dataLoggers = await DataLoggers.find({deviceId}, {variableId: 1, eventId: 1, value: 1});
         data.values.map((variable) => {
             const variableId = variable.id;
-            const foundLogger = dataLoggers.find((logger) => logger.variableId === variableId && logger.eventId === eventId);
-            if (true) {
-                dataLogger.variableName = variable.name;
-                dataLogger.variableId = variableId;
-                dataLogger.deviceId = deviceId;
-                dataLogger.eventId = eventId;
-                dataLogger.value = variable.value;
-                const index = GADGET_TYPES[1].indexOf('variable.name');
-                dataLogger.type = index === -1 ? "NONE" : GADGET_TYPES[0][index];
-                dataLogger.updatedAt = variable.updated_at;
-                dataLogger.response = dataLoggers;
-                dataLoggerList.push(dataLogger);
-            }
+            dataLogger.variableName = variable.name;
+            dataLogger.variableId = variableId;
+            dataLogger.deviceId = deviceId;
+            dataLogger.eventId = eventId;
+            dataLogger.value = variable.value;
+            const index = GADGET_TYPES[1].indexOf('variable.name');
+            dataLogger.type = index === -1 ? "NONE" : GADGET_TYPES[0][index];
+            dataLogger.updatedAt = variable.updated_at;
+            dataLogger.response = data;
+            dataLoggerList.push(dataLogger);
         })
 
         await DataLoggers.create(dataLoggerList);
