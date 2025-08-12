@@ -17,7 +17,7 @@ const dataLoggerSchema = new Schema({
     response: Object
 });
 
-dataLoggerSchema.index({deviceId: 1, eventId: 1}, {unique: true});
+dataLoggerSchema.index({eventId: 1}, {unique: true});
 const dataLoggerModel = model('data_logger', dataLoggerSchema);
 
 module.exports = dataLoggerModel;
