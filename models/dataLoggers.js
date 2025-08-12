@@ -4,8 +4,14 @@ const {Schema, model} = mongoose;
 const dataLoggerSchema = new Schema({
     variableId: String,
     variableName: String,
-    deviceId: String,
-    eventId: String,
+    deviceId: {
+        type: String,
+        required: true
+    },
+    eventId: {
+        type: String,
+        required: true
+    },
     value: Object,
     updatedAt: String,
     response: Object
