@@ -61,7 +61,7 @@ const arduinoWebhook = async (req, res) => {
         const deviceId = data.device_id;
         const eventId = data.event_id;
         const dataLoggerList = [];
-        const dataLogger = {};
+        let dataLogger = {};
 
         const dataLoggers = await DataLoggers.find({deviceId}, {variableId: 1, eventId: 1, value: 1});
         data.values.map(async (variable) => {
@@ -74,11 +74,13 @@ const arduinoWebhook = async (req, res) => {
             dataLogger.type = index === -1 ? "NONE" : GADGET_TYPES[0][index];
             dataLogger.updatedAt = variable.updated_at;
             dataLogger.response = data;
-            await DataLoggers.create(dataLogger);
+            // await DataLoggers.create(dataLogger);
             dataLoggerList.push(dataLogger);
+            dataLogger = {};
         })
 
-        // console.log(dataLoggerList);
+        console.log(dataLoggerList);
+        await DataLoggers.create(dataLoggerList);
         // await Variables.updateOne({_id: '57615007-4dab-41e4-a794-ff0470d2391f'}, {response: data});
     }
     catch (err) {
