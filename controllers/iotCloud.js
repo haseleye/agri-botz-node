@@ -1669,11 +1669,23 @@ const updateVariable = async (req, res) => {
                         .then((cloudApi) => {
                             cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
                                 .then(() => {
-                                    return res.status(200).json({
-                                        status: "success",
-                                        error: "",
-                                        message: {}
-                                    });
+                                    Variables.updateOne({_id: variableId}, {value: variableValue, updatedAt: new Date()})
+                                        .then(() => {
+                                            return res.status(200).json({
+                                                status: "success",
+                                                error: "",
+                                                message: {}
+                                            });
+                                        })
+                                        .catch((err) => {
+                                            res.status(500).json({
+                                                status: "failed",
+                                                error: req.i18n.t('general.internalError'),
+                                                message: {
+                                                    info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                }
+                                            });
+                                        });
                                 })
                                 .catch((err) => {
                                     res.status(500).json({
