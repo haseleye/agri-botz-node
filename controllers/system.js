@@ -67,26 +67,28 @@ const arduinoWebhook = async (req, res) => {
 
         // const dataLoggers = await DataLoggers.find({deviceId}, {variableId: 1, eventId: 1, value: 1});
         data.values.map(async (variable) => {
-            dataLogger.variableId = variable.id;
-            dataLogger.variableName = variable.name;
-            dataLogger.deviceId = deviceId;
-            dataLogger.eventId = eventId;
-            dataLogger.value = variable.value;
-            const index = GADGET_TYPES[1].indexOf('variable.name');
-            dataLogger.type = index === -1 ? "NONE" : GADGET_TYPES[0][index];
-            dataLogger.updatedAt = variable.updated_at;
-            dataLogger.response = data;
-            dataLoggerList.push(dataLogger);
-            dataLogger = {};
+            if (GADGET_TYPES[1].contains(variable.name)) {
+                dataLogger.variableId = variable.id;
+                dataLogger.variableName = variable.name;
+                dataLogger.deviceId = deviceId;
+                dataLogger.eventId = eventId;
+                dataLogger.value = variable.value;
+                const index = GADGET_TYPES[1].indexOf('variable.name');
+                dataLogger.type = index === -1 ? "NONE" : GADGET_TYPES[0][index];
+                dataLogger.updatedAt = variable.updated_at;
+                dataLogger.response = data;
+                dataLoggerList.push(dataLogger);
+                dataLogger = {};
 
-            dataUpdate.variableId = variable.id;
-            dataUpdate.value = variable.value;
-            dataUpdateList.push(dataUpdate);
-            dataUpdate = {};
+                dataUpdate.variableId = variable.id;
+                dataUpdate.value = variable.value;
+                dataUpdateList.push(dataUpdate);
+                dataUpdate = {};
+            }
         });
 
         await DataLoggers.create(dataLoggerList);
-        
+
         dataUpdateList.map(async (update) => {
             await Variables.updateOne({_id: update.variableId}, {value: update.value});
         });
