@@ -67,7 +67,7 @@ const arduinoWebhook = async (req, res) => {
 
         // const dataLoggers = await DataLoggers.find({deviceId}, {variableId: 1, eventId: 1, value: 1});
         data.values.map(async (variable) => {
-            if (GADGET_TYPES[1].contains(variable.name)) {
+            if (GADGET_TYPES[1].includes(variable.name)) {
                 dataLogger.variableId = variable.id;
                 dataLogger.variableName = variable.name;
                 dataLogger.deviceId = deviceId;
