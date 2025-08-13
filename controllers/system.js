@@ -80,7 +80,8 @@ const arduinoWebhook = async (req, res) => {
                 dataLogger = {};
 
                 dataUpdate.variableId = variable.id;
-                dataUpdate.value = variable.value;
+                dataUpdate.value = variable.value
+                dataUpdate.updatedAt = variable.updated_at;
                 dataUpdateList.push(dataUpdate);
                 dataUpdate = {};
             }
@@ -89,7 +90,7 @@ const arduinoWebhook = async (req, res) => {
         await DataLoggers.create(dataLoggerList);
 
         dataUpdateList.map(async (update) => {
-            await Variables.updateOne({_id: update.variableId}, {value: update.value});
+            await Variables.updateOne({_id: update.variableId}, {value: update.value, updatedAt: update.updatedAt});
         });
 
     }

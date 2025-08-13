@@ -14,7 +14,7 @@ const variableSchema = new Schema({
     deviceId: String,
     thingId: String,
     userID: String,
-    response: Object
+    updatedAt: Date,
 })
 
 const variableModel = model('variable', variableSchema);
