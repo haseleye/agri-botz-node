@@ -76,7 +76,6 @@ const arduinoWebhook = async (req, res) => {
                 const index = GADGET_TYPES[1].indexOf(variable.name);
                 dataLogger.type = index === -1 ? "NONE" : GADGET_TYPES[0][index];
                 dataLogger.updatedAt = variable.updated_at;
-                dataLogger.response = data;
                 dataLoggerList.push(dataLogger);
                 dataLogger = {};
 

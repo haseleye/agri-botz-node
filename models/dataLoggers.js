@@ -8,8 +8,7 @@ const dataLoggerSchema = new Schema({
     eventId: String,
     value: Object,
     type: String,
-    updatedAt: String,
-    response: Object
+    updatedAt: Date,
 });
 
 dataLoggerSchema.index({variableId: 1, eventId: 1}, {unique: true});
