@@ -7,7 +7,6 @@ const dataLoggerSchema = new Schema({
     deviceId: String,
     eventId: String,
     value: Object,
-    type: String,
     updatedAt: Date,
 });
 
