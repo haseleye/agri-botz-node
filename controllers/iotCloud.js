@@ -8,6 +8,17 @@ const Variables = require('../models/variables');
 const {isNumeric, isFloat} = require('../utils/numberUtils');
 const {generateUUID} = require('../utils/codeGenerator');
 
+const VARIABLE_CATEGORIES = {
+    SENSOR: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity",],
+    IRRIGATION: ["solenoid1State", "solenoid2State"],
+    INDICATOR: ["isOnline", "isActive"],
+    COMMAND: ["manualSwitch1", "manualSwitch2", "espRestart"],
+    SYSTEM: ["isTerminated"],
+    SETTING: ["solenoid1Scheduler1", "solenoid1Scheduler2", "solenoid1Scheduler3", "solenoid1Scheduler4", "solenoid1Scheduler5",
+        "solenoid2Scheduler1", "solenoid2Scheduler2", "solenoid2Scheduler3", "solenoid2Scheduler4", "solenoid2Scheduler5",
+        "deepSleepMode", "dailyOnlineRefreshes", "gmtZone"]
+}
+
 const connectClient = () => {
     return new Promise(async (myResolve, myReject) => {
         const client = ArduinoIotClient.ApiClient.instance;
@@ -1205,6 +1216,18 @@ const addVariable = async (req, res) => {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.notComplete'),
+                message: {}
+            });
+        }
+
+        const correctName = VARIABLE_CATEGORIES.SENSOR.includes(name) || VARIABLE_CATEGORIES.IRRIGATION.includes(name)
+            || VARIABLE_CATEGORIES.INDICATOR.includes(name) || VARIABLE_CATEGORIES.COMMAND.includes(name)
+            || VARIABLE_CATEGORIES.SYSTEM.includes(name) || VARIABLE_CATEGORIES.SETTING.includes(name);
+
+        if (!correctName) {
+            return res.status(400).json({
+                status: "failed",
+                error: req.i18n.t('iot.notCorrect'),
                 message: {}
             });
         }
@@ -2994,5 +3017,6 @@ module.exports = {
     terminateDevice,
     getUserSites,
     getSiteInfo,
-    getDeviceInfo
+    getDeviceInfo,
+    VARIABLE_CATEGORIES
 };
