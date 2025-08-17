@@ -2,7 +2,6 @@ const debug = require('debug');
 const errorLog = debug('app-system:error');
 const User = require("./users");
 const DataLoggers = require('../models/dataLoggers');
-const {GADGET_TYPES} = require('../models/users');
 const {VARIABLE_CATEGORIES} = require('./iotCloud');
 const Variables = require('../models/variables');
 
@@ -68,7 +67,6 @@ const arduinoWebhook = async (req, res) => {
 
         // const dataLoggers = await DataLoggers.find({deviceId}, {variableId: 1, eventId: 1, value: 1});
         data.values.map(async (variable) => {
-            // if (GADGET_TYPES[1].includes(variable.name) || ['isOnline'].includes(variable.name)) {
             if (VARIABLE_CATEGORIES.SENSOR.includes(variable.name) || VARIABLE_CATEGORIES.IRRIGATION.includes(variable.name)
                 || ['isOnline'].includes(variable.name)) {
                 dataLogger.variableId = variable.id;
@@ -76,8 +74,6 @@ const arduinoWebhook = async (req, res) => {
                 dataLogger.deviceId = deviceId;
                 dataLogger.eventId = eventId;
                 dataLogger.value = variable.value;
-                // const index = GADGET_TYPES[1].indexOf(variable.name);
-                // dataLogger.type = index === -1 ? "NONE" : GADGET_TYPES[0][index];
                 dataLogger.updatedAt = variable.updated_at;
                 dataLoggerList.push(dataLogger);
                 dataLogger = {};

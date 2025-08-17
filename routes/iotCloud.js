@@ -17,7 +17,7 @@ router.post('/configure-control-unit', authorize('Api', ['User', 'Admin']), iotC
 
 router.post('/add-device', authorize('Api', ['Admin']), iotCloud.addDevice);
 
-router.post('/update-device-gps', authorize('Api', ['User']), iotCloud.updateDeviceGPS);
+router.post('/update-gadget-gps', authorize('Api', ['User']), iotCloud.updateGadgetGPS);
 
 router.post('/add-gadget', authorize('Api', ['Admin']), iotCloud.addGadget);
 
@@ -43,6 +43,8 @@ router.post('/get-user-sites', authorize('Api', ['User', 'Admin']), iotCloud.get
 
 router.post('/get-site-info', authorize('Api', ['User', 'Admin']), iotCloud.getSiteInfo);
 
-router.post('/get-device-info', authorize('Api', ['User', 'Admin']), iotCloud.getDeviceInfo);
+router.post('/get-gadget-info', authorize('Api', ['User', 'Admin']), iotCloud.getGadgetInfo);
+
+router.post('/get-device-info', authorize('Api', ['Admin']), iotCloud.getDeviceInfo);
 
 module.exports = router;

@@ -10,6 +10,7 @@ const variableSchema = new Schema({
             values: ['integer', 'float', 'string', 'boolean', 'schedule']
         }
     },
+    category: String,
     value: Object,
     deviceId: String,
     thingId: String,

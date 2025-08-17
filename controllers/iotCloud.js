@@ -1,7 +1,7 @@
 const {ArduinoIoTCloud} = require('arduino-iot-js');
 const ArduinoIotClient = require('@arduino/arduino-iot-client');
 const rp = require('request-promise');
-const {userModel: Users, GADGET_TYPES} = require('../models/users');
+const Users = require('../models/users');
 const Devices = require('../models/devices');
 const ControlUnits = require('../models/controlUnits');
 const Variables = require('../models/variables');
@@ -850,11 +850,11 @@ const addDevice = async (req, res) => {
     }
 }
 
-const updateDeviceGPS = async (req, res) => {
+const updateGadgetGPS = async (req, res) => {
     try {
-        const {deviceId, gps, user: {id: userID}} = await req.body;
+        const {gadgetId, gps, user: {id: userID}} = await req.body;
 
-        if (deviceId === undefined || gps === undefined || gps.lat === undefined || gps.long === undefined) {
+        if (gadgetId === undefined || gps === undefined || gps.lat === undefined || gps.long === undefined) {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.notComplete'),
@@ -862,7 +862,7 @@ const updateDeviceGPS = async (req, res) => {
             });
         }
 
-        if (!isNumeric(gps.lat) || !isNumeric(gps.long)) {
+        if (!isFloat(gps.lat) || !isFloat(gps.long)) {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.invalidDataType'),
@@ -870,9 +870,9 @@ const updateDeviceGPS = async (req, res) => {
             });
         }
 
-        await Devices.findOne({_id: deviceId}, {userID: 1})
-            .then(async (device) => {
-                if (!device) {
+        await Users.findOne({'sites.gadgets.id': gadgetId}, {_id: 1, sites: 1})
+            .then(async (user) => {
+                if (!user) {
                     return res.status(400).json({
                         status: "failed",
                         error: req.i18n.t('iot.notCorrect'),
@@ -880,15 +880,7 @@ const updateDeviceGPS = async (req, res) => {
                     });
                 }
 
-                if (device.userID === undefined) {
-                    return res.status(401).json({
-                        status: "failed",
-                        error: req.i18n.t('iot.notLinked'),
-                        message: {}
-                    });
-                }
-
-                if (device.userID !== userID) {
+                if (user._id.toString() !== userID) {
                     return res.status(401).json({
                         status: "failed",
                         error: req.i18n.t('iot.notPermitted'),
@@ -896,7 +888,34 @@ const updateDeviceGPS = async (req, res) => {
                     });
                 }
 
-                await Devices.updateOne({_id: deviceId}, {gps})
+                let siteId;
+                user.sites.map((site) => {
+                    site.gadgets.map((gadget) => {
+                        if (gadget.id === gadgetId) {
+                            siteId = site.id;
+                        }
+                    });
+                });
+
+                let duplicate;
+                let isTerminated = false;
+                user.sites.map((site) => {
+                    if (site.id === siteId && site.isTerminated) {
+                        isTerminated = true;
+                    }
+                });
+
+                if (isTerminated) {
+                    return res.status(400).json({
+                        status: "failed",
+                        error: req.i18n.t('iot.terminatedSite'),
+                        message: {}
+                    });
+                }
+
+                await Users.updateOne({'sites.gadgets.id': gadgetId},
+                    {$set: {'sites.$.gadgets.$[inner].gps': gps}},
+                    {arrayFilters: [{'inner.id': gadgetId}]})
                     .then(() => {
                         res.status(200).json({
                             status: "success",
@@ -937,20 +956,12 @@ const updateDeviceGPS = async (req, res) => {
 
 const addGadget = async (req, res) => {
     try {
-        const {type, name, siteId, deviceId} = await req.body;
+        const {name, siteId, deviceId} = await req.body;
 
-        if (type === undefined || name === undefined || siteId === undefined || deviceId === undefined) {
+        if (name === undefined || siteId === undefined || deviceId === undefined) {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.notComplete'),
-                message: {}
-            });
-        }
-
-        if (!GADGET_TYPES[0].includes(type.toString().toUpperCase())) {
-            return res.status(400).json({
-                status: "failed",
-                error: req.i18n.t('iot.notCorrect'),
                 message: {}
             });
         }
@@ -970,11 +981,11 @@ const addGadget = async (req, res) => {
                     if (site.id === siteId) {
                         const gadgetsSet = new Set();
                         site.gadgets.map((gadget) => {
-                            const gadgetString =  gadget.type.toString() + gadget.name.toString();
+                            const gadgetString =  gadget.name.toString();
                             gadgetsSet.add(gadgetString);
                         });
                         const count = gadgetsSet.size;
-                        const newGadgetString =  type.toString() + name.toString();
+                        const newGadgetString =  name.toString();
                         gadgetsSet.add(newGadgetString);
                         const newCount = gadgetsSet.size;
                         duplicate = count === newCount;
@@ -999,7 +1010,7 @@ const addGadget = async (req, res) => {
                             });
                         }
 
-                        if (device.siteId !== undefined && device.siteId !== siteId) {
+                        if (device.siteId !== undefined) {
                             return res.status(401).json({
                                 status: "failed",
                                 error: req.i18n.t('iot.occupied'),
@@ -1011,7 +1022,7 @@ const addGadget = async (req, res) => {
                             .then(() => {
                                 user.sites.map(async (site) => {
                                     if (site.id === siteId) {
-                                        const gadget = {id: generateUUID(), type: type.toString().toUpperCase(), name, deviceId};
+                                        const gadget = {id: generateUUID(), name, deviceId};
                                         site.gadgets.push(gadget);
 
                                         await user.save()
@@ -1119,12 +1130,11 @@ const renameGadget = async (req, res) => {
                     });
                 }
 
-                let siteId, type;
+                let siteId;
                 user.sites.map((site) => {
                     site.gadgets.map((gadget) => {
                         if (gadget.id === gadgetId) {
                             siteId = site.id;
-                            type = gadget.type;
                         }
                     });
                 });
@@ -1135,11 +1145,11 @@ const renameGadget = async (req, res) => {
                     if (site.id === siteId) {
                         const gadgetsSet = new Set();
                         site.gadgets.map((gadget) => {
-                            const gadgetString =  gadget.type.toString() + gadget.name.toString();
+                            const gadgetString =  gadget.name.toString();
                             gadgetsSet.add(gadgetString);
                         });
                         const count = gadgetsSet.size;
-                        const newGadgetString =  type.toString() + newName.toString();
+                        const newGadgetString =  newName.toString();
                         gadgetsSet.add(newGadgetString);
                         const newCount = gadgetsSet.size;
                         duplicate = count === newCount;
@@ -1220,11 +1230,27 @@ const addVariable = async (req, res) => {
             });
         }
 
-        const correctName = VARIABLE_CATEGORIES.SENSOR.includes(name) || VARIABLE_CATEGORIES.IRRIGATION.includes(name)
-            || VARIABLE_CATEGORIES.INDICATOR.includes(name) || VARIABLE_CATEGORIES.COMMAND.includes(name)
-            || VARIABLE_CATEGORIES.SYSTEM.includes(name) || VARIABLE_CATEGORIES.SETTING.includes(name);
+        let category = "";
+        if (VARIABLE_CATEGORIES.SENSOR.includes(name)) {
+            category = "SENSOR";
+        }
+        else if (VARIABLE_CATEGORIES.IRRIGATION.includes(name)) {
+            category = "IRRIGATION";
+        }
+        else if (VARIABLE_CATEGORIES.INDICATOR.includes(name)) {
+            category = "INDICATOR";
+        }
+        else if (VARIABLE_CATEGORIES.COMMAND.includes(name)) {
+            category = "COMMAND";
+        }
+        else if (VARIABLE_CATEGORIES.SYSTEM.includes(name)) {
+            category = "SYSTEM";
+        }
+        else if (VARIABLE_CATEGORIES.SETTING.includes(name)) {
+            category = "SETTING";
+        }
 
-        if (!correctName) {
+        if (category === "") {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.notCorrect'),
@@ -1431,6 +1457,7 @@ const addVariable = async (req, res) => {
                     _id: variableId,
                     name,
                     type,
+                    category,
                     value: variableValue,
                     deviceId,
                     thingId: device.thingId,
@@ -2754,26 +2781,104 @@ const getSiteInfo = async (req, res) => {
                     }
                 }
 
-                const sites = user.sites.map((site) => {
-                    return site.gadgets.map((gadget) => {
-                        const newGadget = {};
-                        newGadget.id = gadget.id;
-                        newGadget.type = gadget.type;
-                        newGadget.name = gadget.name;
-                        newGadget.label = req.i18n.t(`iot.gadgetLabel.${gadget.type}`);
-                        newGadget.deviceId = gadget.deviceId;
-                        return newGadget;
+                const deviceList = [];
+                user.sites.map((site) => {
+                    site.gadgets.map((gadget) => {
+                        deviceList.push(gadget.deviceId);
                     });
                 });
 
-                res.status(200).json({
-                    status: "success",
-                    error: "",
+                Variables.find({deviceId: deviceList}, {thingId: 0, userID: 0, __v: 0})
+                    .then((variables) => {
+                        const sites = user.sites.map((site) => {
+                            const newSite = {...site.toObject()};
+                            newSite.gadgets = newSite.gadgets.map((gadget) => {
+                                const requiredVariables = ['isActive', 'isTerminated', 'isOnline'];
+                                const filteredVariables = variables.filter((variable) => variable.deviceId === gadget.deviceId && requiredVariables.includes(variable.name));
+                                const newGadget = { ...gadget, variables: filteredVariables.map((filteredVariable) => {
+                                    const {deviceId, ...newFilteredVariable} = filteredVariable.toObject();
+                                    newFilteredVariable.name = req.i18n.t(`iot.variableLabel.${filteredVariable.name}`);
+                                    return newFilteredVariable;
+                                })};
+                                if (role === 'USER') {
+                                    delete newGadget.deviceId;
+                                }
+                                return newGadget;
+                            });
+                            return newSite;
+                        });
+
+                        res.status(200).json({
+                            status: "success",
+                            error: "",
+                            message: {
+                                userInfo,
+                                siteInfo: sites[0]
+                            }
+                        });
+                    })
+                    .catch((err) => {
+                        res.status(500).json({
+                            status: "failed",
+                            error: req.i18n.t('general.internalError'),
+                            message: {
+                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                            }
+                        });
+                    });
+            })
+            .catch((err) => {
+                res.status(500).json({
+                    status: "failed",
+                    error: req.i18n.t('general.internalError'),
                     message: {
-                        userInfo,
-                        siteInfo: sites
+                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
                     }
-                })
+                });
+            });
+    }
+    catch (err) {
+        res.status(500).json({
+            status: "failed",
+            error: req.i18n.t('general.internalError'),
+            message: {
+                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+            }
+        });
+    }
+}
+
+const getGadgetInfo = async (req, res) => {
+    try {
+        const {gadgetId, user: {id: userID, role}} = await req.body;
+
+        if (gadgetId === undefined) {
+            return res.status(400).json({
+                status: "failed",
+                error: req.i18n.t('iot.notComplete'),
+                message: {}
+            });
+        }
+
+        await Users.findOne({'sites.gadgets.id': gadgetId}, {_id: 1, sites: 1})
+            .then((user) => {
+                if (!user) {
+                    return res.status(400).json({
+                        status: "failed",
+                        error: req.i18n.t('iot.notCorrect'),
+                        message: {}
+                    });
+                }
+
+                if (user._id.toString() !== userID) {
+                    return res.status(401).json({
+                        status: "failed",
+                        error: req.i18n.t('iot.notPermitted'),
+                        message: {}
+                    });
+                }
+
+
             })
             .catch((err) => {
                 res.status(500).json({
@@ -2798,7 +2903,7 @@ const getSiteInfo = async (req, res) => {
 
 const getDeviceInfo = async (req, res) => {
     try {
-        const {deviceId, user: {id: userID, role}} = await req.body;
+        const {deviceId} = await req.body;
 
         if (deviceId === undefined) {
             return res.status(400).json({
@@ -2818,70 +2923,40 @@ const getDeviceInfo = async (req, res) => {
                     });
                 }
 
-                if (role === 'USER') {
-                    if (device.userID === undefined || device.userID !== userID) {
-                        return res.status(401).json({
-                            status: "failed",
-                            error: req.i18n.t('iot.notPermitted'),
-                            message: {}
+                await Users.findOne({_id: device.userID}, {firstName: 1, lastName: 1, sites: 1})
+                    .then((user) => {
+                        const userInfo = {};
+                        userInfo.userName = `${user.firstName} ${user.lastName}`;
+                        user.sites.map((site) => {
+                            if (site.id === device.siteId) {
+                                userInfo.siteName = site.name;
+                                site.gadgets.map((gadget) => {
+                                    if (gadget.deviceId === deviceId) {
+                                        userInfo.gadgetId = gadget.id;
+                                        userInfo.gadgetName = gadget.name;
+                                    }
+                                })
+                            }
+                        })
+
+                        res.status(200).json({
+                            status: "success",
+                            error: "",
+                            message: {
+                                deviceInfo: device,
+                                userInfo
+                            }
                         });
-                    }
-
-                    if (device.isTerminated) {
-                        return res.status(401).json({
-                            status: "failed",
-                            error: req.i18n.t('iot.terminatedDevice'),
-                            message: {}
-                        });
-                    }
-                }
-
-                let deviceInfo = {};
-                if (role === 'USER') {
-                    deviceInfo = {
-                        id: device._id,
-                        siteId: device.siteId,
-                        siteName: "",
-                        gps: device.gps
-                    };
-                }
-                else {
-                    deviceInfo = {
-                        id: device._id,
-                        siteId: device.siteId,
-                        siteName: "",
-                        gps: device.gps,
-                        isActive: device.isActive,
-                        isTerminated: device.isTerminated
-                    };
-                }
-
-                let userInfo = undefined;
-                const variables = await Variables.find({deviceId}, {userID: 0, deviceId: 0,  __v: 0});
-
-                if (device.userID !== undefined) {
-                    const user = await Users.findOne({_id: device.userID}, {firstName: 1, lastName: 1, mobile: 1, sites: 1});
-                    user.sites.map((site) => {
-                        if (site.id === device.siteId) {
-                            deviceInfo.siteName = site.name;
-                        }
                     })
-                    if (role === 'ADMIN') {
-                        userInfo = {};
-                        userInfo.name = `${user.firstName} ${user.lastName}`;
-                        userInfo.mobile = user.mobile.primary.number;
-                    }
-                }
-
-                res.status(200).json({
-                    status: "success",
-                    error: "",
-                    message: {
-                        deviceInfo,
-                        userInfo,
-                        variables
-                    }
-                });
+                    .catch((err) => {
+                        res.status(500).json({
+                            status: "failed",
+                            error: req.i18n.t('general.internalError'),
+                            message: {
+                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                            }
+                        });
+                    });
             })
             .catch((err) => {
                 res.status(500).json({
@@ -3004,7 +3079,7 @@ module.exports = {
     gearControlUnit,
     configureControlUnit,
     addDevice,
-    updateDeviceGPS,
+    updateGadgetGPS,
     addGadget,
     renameGadget,
     addVariable,
@@ -3017,6 +3092,7 @@ module.exports = {
     terminateDevice,
     getUserSites,
     getSiteInfo,
+    getGadgetInfo,
     getDeviceInfo,
     VARIABLE_CATEGORIES
 };

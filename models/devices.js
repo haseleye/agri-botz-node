@@ -7,10 +7,6 @@ const deviceSchema = new Schema({
     thingId: String,
     userID: String,
     siteId: String,
-    gps: {
-        lat: Number,
-        long: Number,
-    },
     controlUnitId: String,
     isActive: {
         type: Boolean,
