@@ -292,7 +292,8 @@ const login = async (req, res) => {
                                     })
                             })
 
-                        user = {...user._doc, _id: undefined, __v: undefined, password: undefined};
+                        user = {...user._doc, _id: undefined, __v: undefined, password: undefined, subscription: undefined,
+                            courtesy: undefined, payment: undefined, coupons: undefined};
                         // user = clearEmpties(user);
 
                         res.status(200)
