@@ -2870,7 +2870,7 @@ const getGadgetInfo = async (req, res) => {
                     });
                 }
 
-                if (user._id.toString() !== userID) {
+                if (role === 'USER' && user._id.toString() !== userID) {
                     return res.status(401).json({
                         status: "failed",
                         error: req.i18n.t('iot.notPermitted'),
@@ -2878,7 +2878,41 @@ const getGadgetInfo = async (req, res) => {
                     });
                 }
 
+                let gadgetInfo = {};
+                let deviceId;
+                user.sites.map((site) => {
+                    site.gadgets.map((gadget) => {
+                        if (gadget.id === gadgetId) {
+                            deviceId = gadget.deviceId;
+                            gadgetInfo = {...gadget.toObject()};
+                            if (role === 'USER') {
+                                gadgetInfo.deviceId = undefined;
+                            }
+                        }
+                    });
+                });
 
+                Variables.find({deviceId}, {deviceId: 0, thingId: 0, userID: 0, __v: 0})
+                    .then((variables) => {
+                        gadgetInfo.variables = variables;
+
+                        res.status(200).json({
+                            status: "success",
+                            error: "",
+                            message: {
+                                gadgetInfo
+                            }
+                        });
+                    })
+                    .catch((err) => {
+                        res.status(500).json({
+                            status: "failed",
+                            error: req.i18n.t('general.internalError'),
+                            message: {
+                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                            }
+                        });
+                    });
             })
             .catch((err) => {
                 res.status(500).json({

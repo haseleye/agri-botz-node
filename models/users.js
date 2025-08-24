@@ -174,6 +174,10 @@ const userSchema = new Schema({
         },
         message: String
     },
+    createdAt: {
+        type: Date,
+        default: new Date()
+    }
 });
 
 userSchema.pre('validate', function(next) {
