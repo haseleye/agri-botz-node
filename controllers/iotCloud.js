@@ -2680,27 +2680,11 @@ const getUserSites = async (req, res) => {
             await Users.findOne({_id: userID}, {sites: 1})
                 .then((user) => {
 
-                    const siteList = [];
-                    let siteInfo = {};
-                    user.sites.map((site) => {
-                        siteInfo.id = site.id;
-                        siteInfo.name = site.name;
-                        siteInfo.isActive = site.isActive;
-                        siteInfo.isTerminated = site.isTerminated;
-                        siteInfo.createdAt = site.createdAt;
-                        siteInfo.activatedAt = site.activatedAt;
-                        siteInfo.deactivatedAt = site.deactivatedAt;
-                        siteInfo.terminatedAt = site.terminatedAt;
-
-                        siteList.push(siteInfo);
-                        siteInfo = {};
-                    });
-
                     res.status(200).json({
                         status: "success",
                         error: "",
                         message: {
-                            sites: siteList,
+                            sites: user.sites,
                         }
                     });
 
