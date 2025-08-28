@@ -10,7 +10,7 @@ const deviceSchema = new Schema({
     controlUnitId: String,
     isActive: {
         type: Boolean,
-        default: false
+        default: true
     },
     isTerminated: {
         type: Boolean,

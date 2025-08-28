@@ -63,7 +63,8 @@ const addSite = async (req, res) => {
 
         const siteId = generateUUID();
 
-        const siteData = {id: siteId, name: siteName, createdAt: new Date()};
+        const createdAt = new Date();
+        const siteData = {id: siteId, name: siteName, createdAt};
         if (role === 'USER') {
             await Users.findOne({_id: userID}, {sites: 1})
                 .then(async (user) => {
@@ -89,7 +90,14 @@ const addSite = async (req, res) => {
                                 status: "success",
                                 error: "",
                                 message: {
-                                    siteId
+                                    siteInfo: {
+                                        id: siteId,
+                                        name: siteName,
+                                        isActive: true,
+                                        isTerminated: false,
+                                        gadgets: [],
+                                        createdAt
+                                    }
                                 }
                             });
                         })
@@ -164,7 +172,14 @@ const addSite = async (req, res) => {
                                 status: "success",
                                 error: "",
                                 message: {
-                                    siteId
+                                    siteInfo: {
+                                        id: siteId,
+                                        name: siteName,
+                                        isActive: true,
+                                        isTerminated: false,
+                                        gadgets: [],
+                                        createdAt
+                                    }
                                 }
                             });
                         })
