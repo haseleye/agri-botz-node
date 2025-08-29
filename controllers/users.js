@@ -278,54 +278,21 @@ const login = async (req, res) => {
                                     })
                             })
 
-                        const deviceList = [];
-                        user.sites.map((site) => {
-                            site.gadgets.map((gadget) => {
-                                deviceList.push(gadget.deviceId);
-                            });
-                        });
+                        const sites = user.sites;
+                        user = {...user._doc, _id: undefined, __v: undefined, password: undefined, subscription: undefined,
+                            courtesy: undefined, payment: undefined, coupons: undefined, sites: undefined};
 
-                        Variables.find({deviceId: deviceList}, {thingId: 0, userID: 0, __v: 0})
-                            .then((variables) => {
-                                const sites = user.sites.map((site) => {
-                                    const newSite = {...site.toObject()};
-                                    newSite.gadgets = newSite.gadgets.map((gadget) => {
-                                        const requiredVariables = ['isActive', 'isTerminated', 'isOnline'];
-                                        const filteredVariables = variables.filter((variable) => variable.deviceId === gadget.deviceId && requiredVariables.includes(variable.name));
-                                        const newGadget = { ...gadget, variables: filteredVariables.map((filteredVariable) => {
-                                                const {deviceId, ...newFilteredVariable} = filteredVariable.toObject();
-                                                newFilteredVariable.name = req.i18n.t(`iot.variableLabel.${filteredVariable.name}`);
-                                                return newFilteredVariable;
-                                            })};
-                                        delete newGadget.deviceId;
-                                        return newGadget;
-                                    });
-                                    return newSite;
-                                });
-
-                                user = {...user._doc, _id: undefined, __v: undefined, password: undefined, subscription: undefined,
-                                    courtesy: undefined, payment: undefined, coupons: undefined, sites: undefined};
-
-                                res.status(200).json({
-                                        status: "success",
-                                        error: "",
-                                        message: {
-                                            user,
-                                            sites,
-                                            accessToken,
-                                            renewToken
-                                        }
-                                    })
+                        res.status(200)
+                            .json({
+                                status: "success",
+                                error: "",
+                                message: {
+                                    user,
+                                    sites,
+                                    accessToken,
+                                    renewToken
+                                }
                             })
-                            .catch((err) => {
-                                res.status(500).json({
-                                    status: "failed",
-                                    error: req.i18n.t('general.internalError'),
-                                    message: {
-                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
-                                    }
-                                });
-                            });
                     }
                     else {
                         const loginMaxWrongTrails = process.env.LOGIN_MAX_WRONG_TRIALS;
