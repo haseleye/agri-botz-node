@@ -279,16 +279,22 @@ const login = async (req, res) => {
                             })
 
                         const sites = user.sites;
+                        const newSites = sites.map((site) => {
+                            const newSite = {...site.toObject()};
+                            newSite.numberOfGadgets = site.gadgets.length;
+                            delete newSite.gadgets;
+                            return newSite;
+                        });
+
                         user = {...user._doc, _id: undefined, __v: undefined, password: undefined, subscription: undefined,
                             courtesy: undefined, payment: undefined, coupons: undefined, sites: undefined};
 
-                        res.status(200)
-                            .json({
+                        res.status(200).json({
                                 status: "success",
                                 error: "",
                                 message: {
                                     user,
-                                    sites,
+                                    sites: newSites,
                                     accessToken,
                                     renewToken
                                 }
