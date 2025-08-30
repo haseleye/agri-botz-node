@@ -41,9 +41,9 @@ router.post('/terminate-device', authorize('Api', ['Admin']), iotCloud.terminate
 
 router.post('/get-user-sites', authorize('Api', ['User', 'Admin']), iotCloud.getUserSites);
 
-router.post('/get-site-info', authorize('Api', ['User', 'Admin']), iotCloud.getSiteInfo);
+router.post('/get-site-details', authorize('Api', ['User', 'Admin']), iotCloud.getSiteDetails);
 
-router.post('/get-gadget-info', authorize('Api', ['User', 'Admin']), iotCloud.getGadgetInfo);
+router.post('/get-gadget-details', authorize('Api', ['User', 'Admin']), iotCloud.getGadgetDetails);
 
 router.post('/get-device-info', authorize('Api', ['Admin']), iotCloud.getDeviceInfo);
 

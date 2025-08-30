@@ -95,7 +95,7 @@ const addSite = async (req, res) => {
                                         name: siteName,
                                         isActive: true,
                                         isTerminated: false,
-                                        gadgets: [],
+                                        numberOfGadgets: 0,
                                         createdAt
                                     }
                                 }
@@ -247,8 +247,6 @@ const renameSite = async (req, res) => {
                         });
                     }
 
-
-
                     let duplicated = false;
                     let isTerminated = false;
                     user.sites.map((site) => {
@@ -278,10 +276,21 @@ const renameSite = async (req, res) => {
 
                     await Users.updateOne({'sites.id': siteId}, {$set: {'sites.$.name': newName}})
                         .then(() => {
+                            let siteInfo = {};
+                            user.sites.map((site) => {
+                                if (site.id === siteId) {
+                                    siteInfo = {...site.toObject()}
+                                    siteInfo.name = newName;
+                                    siteInfo.numberOfGadgets = site.gadgets.length;
+                                    delete siteInfo.gadgets;
+                                }
+                            });
                             res.status(200).json({
                                 status: "success",
                                 error: "",
-                                message: {}
+                                message: {
+                                    siteInfo
+                                }
                             });
                         })
                         .catch((err) => {
@@ -2666,6 +2675,7 @@ const getUserSites = async (req, res) => {
                         siteInfo.activatedAt = site.activatedAt;
                         siteInfo.deactivatedAt = site.deactivatedAt;
                         siteInfo.terminatedAt = site.terminatedAt;
+                        siteInfo.numberOfGadgets = site.gadgets.length;
 
                         siteList.push(siteInfo);
                         siteInfo = {};
@@ -2695,11 +2705,19 @@ const getUserSites = async (req, res) => {
             await Users.findOne({_id: userID}, {sites: 1})
                 .then((user) => {
 
+                    const sites = user.sites;
+                    const newSites = sites.map((site) => {
+                        const newSite = {...site.toObject()};
+                        newSite.numberOfGadgets = site.gadgets.length;
+                        delete newSite.gadgets;
+                        return newSite;
+                    });
+
                     res.status(200).json({
                         status: "success",
                         error: "",
                         message: {
-                            sites: user.sites,
+                            sites: newSites,
                         }
                     });
 
@@ -2726,7 +2744,7 @@ const getUserSites = async (req, res) => {
     }
 }
 
-const getSiteInfo = async (req, res) => {
+const getSiteDetails = async (req, res) => {
     try {
         const {siteId, user: {id: userID, role}} = await req.body;
 
@@ -2791,6 +2809,7 @@ const getSiteInfo = async (req, res) => {
                     .then((variables) => {
                         const sites = user.sites.map((site) => {
                             const newSite = {...site.toObject()};
+                            newSite.numberOfGadgets = site.gadgets.length;
                             newSite.gadgets = newSite.gadgets.map((gadget) => {
                                 const requiredVariables = ['isActive', 'isTerminated', 'isOnline'];
                                 const filteredVariables = variables.filter((variable) => variable.deviceId === gadget.deviceId && requiredVariables.includes(variable.name));
@@ -2812,7 +2831,7 @@ const getSiteInfo = async (req, res) => {
                             error: "",
                             message: {
                                 userInfo,
-                                siteInfo: sites[0]
+                                siteDetails: sites[0]
                             }
                         });
                     })
@@ -2847,7 +2866,7 @@ const getSiteInfo = async (req, res) => {
     }
 }
 
-const getGadgetInfo = async (req, res) => {
+const getGadgetDetails = async (req, res) => {
     try {
         const {gadgetId, user: {id: userID, role}} = await req.body;
 
@@ -2877,15 +2896,15 @@ const getGadgetInfo = async (req, res) => {
                     });
                 }
 
-                let gadgetInfo = {};
+                let gadgetDetails = {};
                 let deviceId;
                 user.sites.map((site) => {
                     site.gadgets.map((gadget) => {
                         if (gadget.id === gadgetId) {
                             deviceId = gadget.deviceId;
-                            gadgetInfo = {...gadget.toObject()};
+                            gadgetDetails = {...gadget.toObject()};
                             if (role === 'USER') {
-                                gadgetInfo.deviceId = undefined;
+                                gadgetDetails.deviceId = undefined;
                             }
                         }
                     });
@@ -2893,13 +2912,13 @@ const getGadgetInfo = async (req, res) => {
 
                 Variables.find({deviceId}, {deviceId: 0, thingId: 0, userID: 0, __v: 0})
                     .then((variables) => {
-                        gadgetInfo.variables = variables;
+                        gadgetDetails.variables = variables;
 
                         res.status(200).json({
                             status: "success",
                             error: "",
                             message: {
-                                gadgetInfo
+                                gadgetDetails
                             }
                         });
                     })
@@ -3124,8 +3143,8 @@ module.exports = {
     activateDevice,
     terminateDevice,
     getUserSites,
-    getSiteInfo,
-    getGadgetInfo,
+    getSiteDetails,
+    getGadgetDetails,
     getDeviceInfo,
     VARIABLE_CATEGORIES
 };
