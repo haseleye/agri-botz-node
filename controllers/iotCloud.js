@@ -9,14 +9,14 @@ const {isNumeric, isFloat} = require('../utils/numberUtils');
 const {generateUUID} = require('../utils/codeGenerator');
 
 const VARIABLE_CATEGORIES = {
-    SENSOR: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity",],
+    SENSORS: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity",],
     IRRIGATION: ["solenoid1State", "solenoid2State"],
-    INDICATOR: ["isOnline", "isActive"],
-    COMMAND: ["manualSwitch1", "manualSwitch2", "espRestart"],
-    SYSTEM: ["isTerminated"],
-    SETTING: ["solenoid1Scheduler1", "solenoid1Scheduler2", "solenoid1Scheduler3", "solenoid1Scheduler4", "solenoid1Scheduler5",
+    VALVES: ["solenoid1Scheduler1", "solenoid1Scheduler2", "solenoid1Scheduler3", "solenoid1Scheduler4", "solenoid1Scheduler5",
         "solenoid2Scheduler1", "solenoid2Scheduler2", "solenoid2Scheduler3", "solenoid2Scheduler4", "solenoid2Scheduler5",
-        "deepSleepMode", "dailyOnlineRefreshes", "gmtZone"]
+        "solenoid1Manual", "solenoid2Manual"],
+    INDICATORS: ["isOnline", "isActive"],
+    SYSTEM: ["isTerminated"],
+    SETTINGS: ["espRestart", "deepSleepMode", "dailyOnlineRefreshes", "gmtZone"]
 }
 
 const connectClient = () => {
@@ -1255,23 +1255,23 @@ const addVariable = async (req, res) => {
         }
 
         let category = "";
-        if (VARIABLE_CATEGORIES.SENSOR.includes(name)) {
-            category = "SENSOR";
+        if (VARIABLE_CATEGORIES.SENSORS.includes(name)) {
+            category = "SENSORS";
         }
         else if (VARIABLE_CATEGORIES.IRRIGATION.includes(name)) {
-            category = "IRRIGATION";
+            category = "WATER_VALVES";
         }
-        else if (VARIABLE_CATEGORIES.INDICATOR.includes(name)) {
-            category = "INDICATOR";
+        else if (VARIABLE_CATEGORIES.VALVES.includes(name)) {
+            category = "WATER_VALVES";
         }
-        else if (VARIABLE_CATEGORIES.COMMAND.includes(name)) {
-            category = "COMMAND";
+        else if (VARIABLE_CATEGORIES.INDICATORS.includes(name)) {
+            category = "INDICATORS";
         }
         else if (VARIABLE_CATEGORIES.SYSTEM.includes(name)) {
             category = "SYSTEM";
         }
-        else if (VARIABLE_CATEGORIES.SETTING.includes(name)) {
-            category = "SETTING";
+        else if (VARIABLE_CATEGORIES.SETTINGS.includes(name)) {
+            category = "SETTINGS";
         }
 
         if (category === "") {
@@ -2744,7 +2744,7 @@ const getUserSites = async (req, res) => {
     }
 }
 
-const getSiteDetails = async (req, res) => {
+const getSiteInfo = async (req, res) => {
     try {
         const {siteId, user: {id: userID, role}} = await req.body;
 
@@ -2815,9 +2815,13 @@ const getSiteDetails = async (req, res) => {
                                 const filteredVariables = variables.filter((variable) => variable.deviceId === gadget.deviceId && requiredVariables.includes(variable.name));
                                 const newGadget = { ...gadget, variables: filteredVariables.map((filteredVariable) => {
                                     const {deviceId, ...newFilteredVariable} = filteredVariable.toObject();
-                                    newFilteredVariable.name = req.i18n.t(`iot.variableLabel.${filteredVariable.name}`);
+                                    newFilteredVariable.label = req.i18n.t(`iot.variableLabel.${filteredVariable.name}`);
                                     return newFilteredVariable;
                                 })};
+                                const sensorsList = variables.filter((variable) => variable.deviceId === gadget.deviceId && variable.category === 'SENSORS');
+                                newGadget.numberOfSensors = sensorsList.length;
+                                const valvesList = variables.filter((variable) => variable.deviceId === gadget.deviceId && variable.category === 'IRRIGATION');
+                                newGadget.numberOfValves = valvesList.length;
                                 if (role === 'USER') {
                                     delete newGadget.deviceId;
                                 }
@@ -2826,12 +2830,16 @@ const getSiteDetails = async (req, res) => {
                             return newSite;
                         });
 
+                        const gadgets = sites[0].gadgets;
+                        const siteInfo = {...sites[0], gadgets: undefined};
+
                         res.status(200).json({
                             status: "success",
                             error: "",
                             message: {
                                 userInfo,
-                                siteDetails: sites[0]
+                                siteInfo,
+                                gadgets
                             }
                         });
                     })
@@ -2866,7 +2874,7 @@ const getSiteDetails = async (req, res) => {
     }
 }
 
-const getGadgetDetails = async (req, res) => {
+const getGadgetInfo = async (req, res) => {
     try {
         const {gadgetId, user: {id: userID, role}} = await req.body;
 
@@ -2896,15 +2904,15 @@ const getGadgetDetails = async (req, res) => {
                     });
                 }
 
-                let gadgetDetails = {};
+                let gadgetInfo = {};
                 let deviceId;
                 user.sites.map((site) => {
                     site.gadgets.map((gadget) => {
                         if (gadget.id === gadgetId) {
                             deviceId = gadget.deviceId;
-                            gadgetDetails = {...gadget.toObject()};
+                            gadgetInfo = {...gadget.toObject()};
                             if (role === 'USER') {
-                                gadgetDetails.deviceId = undefined;
+                                gadgetInfo.deviceId = undefined;
                             }
                         }
                     });
@@ -2912,13 +2920,13 @@ const getGadgetDetails = async (req, res) => {
 
                 Variables.find({deviceId}, {deviceId: 0, thingId: 0, userID: 0, __v: 0})
                     .then((variables) => {
-                        gadgetDetails.variables = variables;
+                        gadgetInfo.variables = variables;
 
                         res.status(200).json({
                             status: "success",
                             error: "",
                             message: {
-                                gadgetDetails
+                                gadgetInfo
                             }
                         });
                     })
@@ -3143,8 +3151,8 @@ module.exports = {
     activateDevice,
     terminateDevice,
     getUserSites,
-    getSiteDetails,
-    getGadgetDetails,
+    getSiteInfo,
+    getGadgetInfo,
     getDeviceInfo,
     VARIABLE_CATEGORIES
 };

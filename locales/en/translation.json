@@ -259,7 +259,7 @@
       "solenoid2Scheduler4": "Water Valve2 Scheduler4",
       "solenoid2Scheduler5": "Water Valve2 Scheduler5",
       "deepSleepMode": "Deep Sleep Mode",
-      "dailyOnlineRefreshes": "Daily Make ups Number",
+      "dailyOnlineRefreshes": "Daily Wake ups Number",
       "gmtZone": "GMT Zone"
     }
   },
