@@ -12,6 +12,7 @@ const logger = require('morgan');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
+const multer = require('multer');
 
 const {i18next, i18nextMiddleware} = require('./controllers/localization');
 const {authorize} = require('./middleware/auth');
@@ -41,10 +42,29 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Folder for storing attachments
+const ATTACHMENTS_DIR = path.join(__dirname, 'attachments');
+
+// Ensure folder exists
+if (!fs.existsSync(ATTACHMENTS_DIR)) {
+  fs.mkdirSync(ATTACHMENTS_DIR);
+}
+
+// Configure Multer storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, ATTACHMENTS_DIR);
+  },
+  filename: function (req, file, cb) {
+    // Save with original name
+    cb(null, file.originalname);
+  }
+});
+const upload = multer({ storage });
+
 app.post('/aldar/getAttachment', async (req, res) => {
   try {
     const { fileName } = req.body;
-    const ATTACHMENTS_DIR = path.join(__dirname, 'attachments');
 
     // Validate input
     if (!fileName || typeof fileName !== 'string') {
@@ -79,6 +99,35 @@ app.post('/aldar/getAttachment', async (req, res) => {
 
   } catch (err) {
     console.error("Error in getAttachment:", err);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+      details: err.message
+    });
+  }
+});
+
+app.post('/aldar/uploadAttachment', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        status: "error",
+        message: "No file uploaded"
+      });
+    }
+
+    return res.json({
+      status: "success",
+      message: "File uploaded successfully",
+      fileName: req.file.originalname,
+      savedAs: req.file.filename,
+      size: req.file.size,
+      path: req.file.path
+    });
+
+  } catch (err) {
+    console.error("Upload error:", err);
+
     return res.status(500).json({
       status: "error",
       message: "Internal server error",
