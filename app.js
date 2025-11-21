@@ -24,6 +24,9 @@ const iotCloudRouter = require('./routes/iotCloud');
 const adminRouter = require('./routes/admin');
 const apiRouter = require('./routes/api');
 const sysRouter = require('./routes/system');
+const {login} = require("./controllers/users");
+
+const {getAccessToken, getSuppliers} = require('./controllers/fusion');
 
 const app = express();
 
@@ -37,6 +40,52 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.post('/aldar/getAttachment', async (req, res) => {
+  try {
+    const { fileName } = req.body;
+    const ATTACHMENTS_DIR = path.join(__dirname, 'attachments');
+
+    // Validate input
+    if (!fileName || typeof fileName !== 'string') {
+      return res.status(400).json({
+        status: "error",
+        message: "fileName is required in JSON payload"
+      });
+    }
+
+    // Prevent directory traversal attacks
+    const safeFileName = path.basename(fileName);
+
+    const filePath = path.join(ATTACHMENTS_DIR, safeFileName);
+
+    // Check if the file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        status: "error",
+        message: "File not found"
+      });
+    }
+
+    // Read file as Base64
+    const fileData = fs.readFileSync(filePath, { encoding: 'base64' });
+
+    return res.json({
+      status: "success",
+      fileName: safeFileName,
+      fileSize: fs.statSync(filePath).size,
+      fileData: fileData // Base64 encoded data
+    });
+
+  } catch (err) {
+    console.error("Error in getAttachment:", err);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+      details: err.message
+    });
+  }
+});
 
 app.use('/', indexRouter);
 app.use('/system', sysRouter);
