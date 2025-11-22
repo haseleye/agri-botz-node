@@ -120,9 +120,7 @@ app.post('/aldar/uploadAttachment', upload.single('file'), (req, res) => {
       status: "success",
       message: "File uploaded successfully",
       fileName: req.file.originalname,
-      savedAs: req.file.filename,
-      size: req.file.size,
-      path: req.file.path
+      size: req.file.size
     });
 
   } catch (err) {
