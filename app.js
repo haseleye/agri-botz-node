@@ -163,11 +163,7 @@ if (sslInstalled) {
   const certPath = '/etc/letsencrypt/live/dev.agribotz.com/';
   const options = {
     key: fs.readFileSync(path.join(certPath, 'privkey.pem')),
-    cert: fs.readFileSync(path.join(certPath, 'cert.pem')),
-    ca: [
-      fs.readFileSync(path.join(certPath, 'chain.pem')),
-      fs.readFileSync(path.join(certPath, 'fullchain.pem')),
-    ]
+    cert: fs.readFileSync(path.join(certPath, 'fullchain.pem')),
   };
   const httpsServer = https.createServer(options, app);
   connectDB()
