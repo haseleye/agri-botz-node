@@ -7,6 +7,7 @@ const ControlUnits = require('../models/controlUnits');
 const Variables = require('../models/variables');
 const {isNumeric, isFloat} = require('../utils/numberUtils');
 const {generateUUID} = require('../utils/codeGenerator');
+const {timeAgo} = require("../utils/dateUtils");
 
 const VARIABLE_CATEGORIES = {
     SENSORS: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity",],
@@ -2816,6 +2817,7 @@ const getSiteInfo = async (req, res) => {
                                 const newGadget = { ...gadget, variables: filteredVariables.map((filteredVariable) => {
                                     const {deviceId, ...newFilteredVariable} = filteredVariable.toObject();
                                     newFilteredVariable.label = req.i18n.t(`iot.variableLabel.${filteredVariable.name}`);
+                                    newFilteredVariable.timeAgo = timeAgo(newFilteredVariable.updatedAt, req.i18n.t('general.language'));
                                     return newFilteredVariable;
                                 })};
                                 const sensorsList = variables.filter((variable) => variable.deviceId === gadget.deviceId && variable.category === 'SENSORS');

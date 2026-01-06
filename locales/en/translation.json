@@ -1,6 +1,7 @@
 {
   "general": {
-    "internalError": "Internal server error"
+    "internalError": "Internal server error",
+    "language": "en"
   },
   "register": {
     "invalidUserId": "Invalid User ID",

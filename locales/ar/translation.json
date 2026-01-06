@@ -1,6 +1,7 @@
 {
   "general": {
-    "internalError": "خطأ داخلي بالنظام"
+    "internalError": "خطأ داخلي بالنظام",
+    "language": "ar"
   },
   "register": {
     "invalidUserId": "كود المستخدم غير سليم",

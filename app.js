@@ -27,8 +27,6 @@ const apiRouter = require('./routes/api');
 const sysRouter = require('./routes/system');
 const {login} = require("./controllers/users");
 
-const {getAccessToken, getSuppliers} = require('./controllers/fusion');
-
 const app = express();
 
 /** View engine setup */
