@@ -65,7 +65,8 @@ const addSite = async (req, res) => {
         const siteId = generateUUID();
 
         const createdAt = new Date();
-        const siteData = {id: siteId, name: siteName, createdAt};
+        const activatedAt = new Date();
+        const siteData = {id: siteId, name: siteName, createdAt, activatedAt};
         if (role === 'USER') {
             await Users.findOne({_id: userID}, {sites: 1})
                 .then(async (user) => {
@@ -97,7 +98,8 @@ const addSite = async (req, res) => {
                                         isActive: true,
                                         isTerminated: false,
                                         numberOfGadgets: 0,
-                                        createdAt
+                                        createdAt,
+                                        activatedAt
                                     }
                                 }
                             });
@@ -179,7 +181,8 @@ const addSite = async (req, res) => {
                                         isActive: true,
                                         isTerminated: false,
                                         gadgets: [],
-                                        createdAt
+                                        createdAt,
+                                        activatedAt
                                     }
                                 }
                             });
@@ -2709,6 +2712,14 @@ const getUserSites = async (req, res) => {
                     const sites = user.sites;
                     const newSites = sites.map((site) => {
                         const newSite = {...site.toObject()};
+                        newSite.createdAgo = timeAgo(site.createdAt, req.i18n.t('general.language'));
+                        newSite.activatedAgo = timeAgo(site.activatedAt, req.i18n.t('general.language'));
+                        if (site.deactivatedAt !== undefined) {
+                            newSite.deactivatedAgo = timeAgo(site.deactivatedAt, req.i18n.t('general.language'));
+                        }
+                        if (site.terminatedAt !== undefined) {
+                            newSite.terminatedAgo = timeAgo(site.terminatedAt, req.i18n.t('general.language'));
+                        }
                         newSite.numberOfGadgets = site.gadgets.length;
                         delete newSite.gadgets;
                         return newSite;
