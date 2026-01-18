@@ -17,6 +17,7 @@ const {createSmsRecord} = require("./smsRecords");
 const crypto = require('../utils/crypto');
 const {getSellingPrice} = require("./plans");
 const Variables = require("../models/variables");
+const {timeAgo} = require("../utils/dateUtils");
 
 const createUser = async (req, res) => {
     try {
@@ -281,6 +282,14 @@ const login = async (req, res) => {
                         const sites = user.sites;
                         const newSites = sites.map((site) => {
                             const newSite = {...site.toObject()};
+                            newSite.createdAgo = timeAgo(site.createdAt, req.i18n.t('general.language'));
+                            newSite.activatedAgo = timeAgo(site.activatedAt, req.i18n.t('general.language'));
+                            if (site.deactivatedAt !== undefined) {
+                                newSite.deactivatedAgo = timeAgo(site.deactivatedAt, req.i18n.t('general.language'));
+                            }
+                            if (site.terminatedAt !== undefined) {
+                                newSite.terminatedAgo = timeAgo(site.terminatedAt, req.i18n.t('general.language'));
+                            }
                             newSite.numberOfGadgets = site.gadgets.length;
                             delete newSite.gadgets;
                             return newSite;
