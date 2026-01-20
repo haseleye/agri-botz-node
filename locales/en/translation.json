@@ -262,6 +262,14 @@
       "deepSleepMode": "Deep Sleep Mode",
       "dailyOnlineRefreshes": "Daily Wake ups Number",
       "gmtZone": "GMT Zone"
+    },
+    "timeAgo": {
+      "created": "Created",
+      "activated": "Active",
+      "deactivated": "Inactive",
+      "online": "Online",
+      "offline": "Offline",
+      "terminated": "Terminated"
     }
   },
   "currencies": {

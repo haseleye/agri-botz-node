@@ -283,13 +283,21 @@ const login = async (req, res) => {
                         const newSites = sites.map((site) => {
                             const newSite = {...site.toObject()};
                             newSite.createdAgo = timeAgo(site.createdAt, req.i18n.t('general.language'));
+                            newSite.createdAgo = req.i18n.t('iot.timeAgo.created') + " " + newSite.createdAgo;
+
                             newSite.activatedAgo = timeAgo(site.activatedAt, req.i18n.t('general.language'));
+                            newSite.activatedAgo = req.i18n.t('iot.timeAgo.activated') + " " + newSite.activatedAgo;
+
                             if (site.deactivatedAt !== undefined) {
                                 newSite.deactivatedAgo = timeAgo(site.deactivatedAt, req.i18n.t('general.language'));
+                                newSite.deactivatedAgo = req.i18n.t('iot.timeAgo.deactivated') + " " + newSite.deactivatedAgo;
                             }
+
                             if (site.terminatedAt !== undefined) {
                                 newSite.terminatedAgo = timeAgo(site.terminatedAt, req.i18n.t('general.language'));
+                                newSite.terminatedAgo = req.i18n.t('iot.timeAgo.terminated') + " " + newSite.terminatedAgo;
                             }
+
                             newSite.numberOfGadgets = site.gadgets.length;
                             delete newSite.gadgets;
                             return newSite;

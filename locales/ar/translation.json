@@ -261,6 +261,14 @@
       "deepSleepMode": "وضعية السكون",
       "dailyOnlineRefreshes": "عدد مرات الاستيقاظ اليومية",
       "gmtZone": "منطقة توقيت جرينتش"
+    },
+    "timeAgo": {
+      "created": "أنشئ",
+      "activated": "مفعل",
+      "deactivated": "متوقف",
+      "online": "متصل",
+      "offline": "غير متصل",
+      "terminated": "منتهي"
     }
   },
   "currencies": {

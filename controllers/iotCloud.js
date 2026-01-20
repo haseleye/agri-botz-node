@@ -2713,13 +2713,21 @@ const getUserSites = async (req, res) => {
                     const newSites = sites.map((site) => {
                         const newSite = {...site.toObject()};
                         newSite.createdAgo = timeAgo(site.createdAt, req.i18n.t('general.language'));
+                        newSite.createdAgo = req.i18n.t('iot.timeAgo.created') + " " + newSite.createdAgo;
+
                         newSite.activatedAgo = timeAgo(site.activatedAt, req.i18n.t('general.language'));
+                        newSite.activatedAgo = req.i18n.t('iot.timeAgo.activated') + " " + newSite.activatedAgo;
+
                         if (site.deactivatedAt !== undefined) {
                             newSite.deactivatedAgo = timeAgo(site.deactivatedAt, req.i18n.t('general.language'));
+                            newSite.deactivatedAgo = req.i18n.t('iot.timeAgo.deactivated') + " " + newSite.deactivatedAgo;
                         }
+
                         if (site.terminatedAt !== undefined) {
                             newSite.terminatedAgo = timeAgo(site.terminatedAt, req.i18n.t('general.language'));
+                            newSite.terminatedAgo = req.i18n.t('iot.timeAgo.terminated') + " " + newSite.terminatedAgo;
                         }
+
                         newSite.numberOfGadgets = site.gadgets.length;
                         delete newSite.gadgets;
                         return newSite;
@@ -2828,7 +2836,34 @@ const getSiteInfo = async (req, res) => {
                                 const newGadget = { ...gadget, variables: filteredVariables.map((filteredVariable) => {
                                     const {deviceId, ...newFilteredVariable} = filteredVariable.toObject();
                                     newFilteredVariable.label = req.i18n.t(`iot.variableLabel.${filteredVariable.name}`);
-                                    newFilteredVariable.timeAgo = timeAgo(newFilteredVariable.updatedAt, req.i18n.t('general.language'));
+                                    if (newFilteredVariable.updatedAt !== undefined) {
+                                        newFilteredVariable.timeAgo = timeAgo(newFilteredVariable.updatedAt, req.i18n.t('general.language'));
+                                    }
+                                    switch (newFilteredVariable.name) {
+                                        case "isTerminated":
+                                            if (newFilteredVariable.value === true) {
+                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.terminated') + " " + newFilteredVariable.timeAgo;
+                                            }
+                                            break;
+
+                                        case "isActive":
+                                            if (newFilteredVariable.value === true) {
+                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.activated') + " " + newFilteredVariable.timeAgo;
+                                            }
+                                            else {
+                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.deactivated') + " " + newFilteredVariable.timeAgo;
+                                            }
+                                            break;
+
+                                        case "isOnline":
+                                            if (newFilteredVariable.value === true) {
+                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.online') + " " + newFilteredVariable.timeAgo;
+                                            }
+                                            else {
+                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.offline') + " " + newFilteredVariable.timeAgo;
+                                            }
+                                            break;
+                                    }
                                     return newFilteredVariable;
                                 })};
                                 const sensorsList = variables.filter((variable) => variable.deviceId === gadget.deviceId && variable.category === 'SENSORS');
