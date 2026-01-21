@@ -2842,25 +2842,25 @@ const getSiteInfo = async (req, res) => {
                                     switch (newFilteredVariable.name) {
                                         case "isTerminated":
                                             if (newFilteredVariable.value === true) {
-                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.terminated') + " " + newFilteredVariable.timeAgo;
+                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.terminated') + "\n" + newFilteredVariable.timeAgo;
                                             }
                                             break;
 
                                         case "isActive":
                                             if (newFilteredVariable.value === true) {
-                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.activated') + " " + newFilteredVariable.timeAgo;
+                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.activated') + "\n" + newFilteredVariable.timeAgo;
                                             }
                                             else {
-                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.deactivated') + " " + newFilteredVariable.timeAgo;
+                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.deactivated') + "\n" + newFilteredVariable.timeAgo;
                                             }
                                             break;
 
                                         case "isOnline":
                                             if (newFilteredVariable.value === true) {
-                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.online') + " " + newFilteredVariable.timeAgo;
+                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.online') + "\n" + newFilteredVariable.timeAgo;
                                             }
                                             else {
-                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.offline') + " " + newFilteredVariable.timeAgo;
+                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.offline') + "\n" + newFilteredVariable.timeAgo;
                                             }
                                             break;
                                     }
