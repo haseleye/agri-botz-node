@@ -259,7 +259,7 @@
       "solenoid2Scheduler4": "الجدول الرابع لمحبس المياه الثاني",
       "solenoid2Scheduler5": "الجدول الخامس لمحبس المياه الثاني",
       "deepSleepMode": "وضعية السكون",
-      "dailyOnlineRefreshes": "عدد مرات الاستيقاظ اليومية",
+      "dailyOnlineRefreshes": "معدل الاستيقاظ اليومي",
       "gmtZone": "منطقة توقيت جرينتش"
     },
     "timeAgo": {
@@ -268,7 +268,12 @@
       "deactivated": "متوقف",
       "online": "متصل",
       "offline": "غير متصل",
-      "terminated": "منتهي"
+      "terminated": "منتهي",
+      "opened": "محبس المياه مفتوح",
+      "closed": "محبس المياه مغلق",
+      "manual": "تم ضبط الري اليدوي",
+      "automatic": "تم ضبط الري الآلي",
+      "updated": "محدث"
     }
   },
   "currencies": {

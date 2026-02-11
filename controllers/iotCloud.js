@@ -1455,6 +1455,15 @@ const addVariable = async (req, res) => {
                                 message: {}
                             });
                         }
+                        if (name === 'dailyOnlineRefreshes') {
+                            if (value.equal <= 0 || value.equal > 24) {
+                                return res.status(400).json({
+                                    status: "failed",
+                                    error: req.i18n.t('iot.invalidDataType'),
+                                    message: {}
+                                });
+                            }
+                        }
                         variableValue = Number(value.equal);
                         break;
 
@@ -1465,6 +1474,19 @@ const addVariable = async (req, res) => {
                                 error: req.i18n.t('iot.invalidDataType'),
                                 message: {}
                             });
+                        }
+                        if (name === 'gmtZone') {
+                            const sign = value.equal[0];
+                            const validSign = /^[+-]$/.test(sign);
+                            const offset = value.equal.slice(1);
+                            const validOffset = (isNumeric(offset) || isFloat(offset)) && offset >= -12 && offset <= 14;
+                            if (!validSign || !validOffset) {
+                                return res.status(400).json({
+                                    status: "failed",
+                                    error: req.i18n.t('iot.invalidDataType'),
+                                    message: {}
+                                });
+                            }
                         }
                         variableValue = value.equal.toString();
                         break;
@@ -1553,7 +1575,6 @@ const updateVariable = async (req, res) => {
                     });
                 }
                 else {
-
                     if (variable.userID !== userID) {
                         return res.status(401).json({
                             status: "failed",
@@ -1714,6 +1735,15 @@ const updateVariable = async (req, res) => {
                                     message: {}
                                 });
                             }
+                            if (name === 'dailyOnlineRefreshes') {
+                                if (value.equal <= 0 || value.equal > 24) {
+                                    return res.status(400).json({
+                                        status: "failed",
+                                        error: req.i18n.t('iot.invalidDataType'),
+                                        message: {}
+                                    });
+                                }
+                            }
                             variableValue = Number(value.equal);
                             break;
 
@@ -1724,6 +1754,19 @@ const updateVariable = async (req, res) => {
                                     error: req.i18n.t('iot.invalidDataType'),
                                     message: {}
                                 });
+                            }
+                            if (name === 'gmtZone') {
+                                const sign = value.equal[0];
+                                const validSign = /^[+-]$/.test(sign);
+                                const offset = value.equal.slice(1);
+                                const validOffset = (isNumeric(offset) || isFloat(offset)) && offset >= -12 && offset <= 14;
+                                if (!validSign || !validOffset) {
+                                    return res.status(400).json({
+                                        status: "failed",
+                                        error: req.i18n.t('iot.invalidDataType'),
+                                        message: {}
+                                    });
+                                }
                             }
                             variableValue = value.equal.toString();
                             break;
@@ -2967,7 +3010,60 @@ const getGadgetInfo = async (req, res) => {
                 });
 
                 Variables.find({deviceId}, {deviceId: 0, thingId: 0, userID: 0, __v: 0})
+                    .lean()     // Doing the same as toObject() - return plain objects instead of documents
                     .then((variables) => {
+                        variables.map((variable) => {
+                            if (variable.updatedAt !== undefined) {
+                                variable.timeAgo = timeAgo(variable.updatedAt, req.i18n.t('general.language'));
+                            }
+                            if (/^solenoid\dScheduler\d$/.test(variable.name) || variable.name === 'dailyOnlineRefreshes' || variable.name === 'gmtZone') {
+                                variable.timeAgo = req.i18n.t('iot.timeAgo.updated') + " " + variable.timeAgo;
+                            }
+
+                            if (/^solenoid\dState$/.test(variable.name)) {
+                                if (variable.value === true) {
+                                    variable.timeAgo = req.i18n.t('iot.timeAgo.opened') + " " + variable.timeAgo;
+                                }
+                                else {
+                                    variable.timeAgo = req.i18n.t('iot.timeAgo.closed') + " " + variable.timeAgo;
+                                }
+                            }
+
+                            if (/^solenoid\dManual$/.test(variable.name)) {
+                                if (variable.value === true) {
+                                    variable.timeAgo = req.i18n.t('iot.timeAgo.manual') + " " + variable.timeAgo;
+                                }
+                                else {
+                                    variable.timeAgo = req.i18n.t('iot.timeAgo.automatic') + " " + variable.timeAgo;
+                                }
+                            }
+
+                            switch (variable.name) {
+                                case "isTerminated":
+                                    if (variable.value === true) {
+                                        variable.timeAgo = req.i18n.t('iot.timeAgo.terminated') + "\n" + variable.timeAgo;
+                                    }
+                                    break;
+
+                                case "isActive":
+                                    if (variable.value === true) {
+                                        variable.timeAgo = req.i18n.t('iot.timeAgo.activated') + "\n" + variable.timeAgo;
+                                    }
+                                    else {
+                                        variable.timeAgo = req.i18n.t('iot.timeAgo.deactivated') + "\n" + variable.timeAgo;
+                                    }
+                                    break;
+
+                                case "isOnline":
+                                    if (variable.value === true) {
+                                        variable.timeAgo = req.i18n.t('iot.timeAgo.online') + "\n" + variable.timeAgo;
+                                    }
+                                    else {
+                                        variable.timeAgo = req.i18n.t('iot.timeAgo.offline') + "\n" + variable.timeAgo;
+                                    }
+                                    break;
+                            }
+                        })
                         gadgetInfo.variables = variables;
 
                         res.status(200).json({

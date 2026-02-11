@@ -269,7 +269,12 @@
       "deactivated": "Inactive",
       "online": "Online",
       "offline": "Offline",
-      "terminated": "Terminated"
+      "terminated": "Terminated",
+      "opened": "Water valve opened",
+      "closed": "Water valve closed",
+      "manual": "Manual irrigation adjusted",
+      "automatic": "Automatic irrigation adjusted",
+      "updated": "Updated"
     }
   },
   "currencies": {

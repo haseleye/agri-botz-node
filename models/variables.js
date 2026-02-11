@@ -15,7 +15,10 @@ const variableSchema = new Schema({
     deviceId: String,
     thingId: String,
     userID: String,
-    updatedAt: Date,
+    updatedAt: {
+        type: Date,
+        default: new Date()
+    },
 })
 
 const variableModel = model('variable', variableSchema);
