@@ -3013,9 +3013,12 @@ const getGadgetInfo = async (req, res) => {
                     .lean()     // Doing the same as toObject() - return plain objects instead of documents
                     .then((variables) => {
                         variables.map((variable) => {
+                            variable.label = req.i18n.t(`iot.variableLabel.${variable.name}`);
+
                             if (variable.updatedAt !== undefined) {
                                 variable.timeAgo = timeAgo(variable.updatedAt, req.i18n.t('general.language'));
                             }
+
                             if (/^solenoid\dScheduler\d$/.test(variable.name) || variable.name === 'dailyOnlineRefreshes' || variable.name === 'gmtZone') {
                                 variable.timeAgo = req.i18n.t('iot.timeAgo.updated') + " " + variable.timeAgo;
                             }
