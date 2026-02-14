@@ -3069,6 +3069,11 @@ const getGadgetInfo = async (req, res) => {
                         })
                         gadgetInfo.variables = variables;
 
+                        const sensorsList = variables.filter((variable) => variable.category === 'SENSORS');
+                        gadgetInfo.numberOfSensors = sensorsList.length;
+                        const valvesList = variables.filter((variable) => variable.category === 'IRRIGATION');
+                        gadgetInfo.numberOfValves = valvesList.length;
+
                         res.status(200).json({
                             status: "success",
                             error: "",
