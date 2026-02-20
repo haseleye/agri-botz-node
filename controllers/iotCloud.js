@@ -1437,18 +1437,18 @@ const addVariable = async (req, res) => {
                         break;
 
                     case 'integer':
-                        if (value.equal === undefined || !isNumeric(value.equal)) {
+                        if (value === undefined || !isNumeric(value)) {
                             return res.status(400).json({
                                 status: "failed",
                                 error: req.i18n.t('iot.invalidDataType'),
                                 message: {}
                             });
                         }
-                        variableValue = Number(value.equal);
+                        variableValue = Number(value);
                         break;
 
                     case 'float':
-                        if (value.equal === undefined || (!isFloat(value.equal) && !isNumeric(value.equal))) {
+                        if (value === undefined || (!isFloat(value) && !isNumeric(value))) {
                             return res.status(400).json({
                                 status: "failed",
                                 error: req.i18n.t('iot.invalidDataType'),
@@ -1456,7 +1456,7 @@ const addVariable = async (req, res) => {
                             });
                         }
                         if (name === 'dailyOnlineRefreshes') {
-                            if (value.equal <= 0 || value.equal > 24) {
+                            if (value <= 0 || value > 24) {
                                 return res.status(400).json({
                                     status: "failed",
                                     error: req.i18n.t('iot.invalidDataType'),
@@ -1464,11 +1464,11 @@ const addVariable = async (req, res) => {
                                 });
                             }
                         }
-                        variableValue = Number(value.equal);
+                        variableValue = Number(value);
                         break;
 
                     case 'string':
-                        if (value.equal === undefined) {
+                        if (value === undefined) {
                             return res.status(400).json({
                                 status: "failed",
                                 error: req.i18n.t('iot.invalidDataType'),
@@ -1476,9 +1476,9 @@ const addVariable = async (req, res) => {
                             });
                         }
                         if (name === 'gmtZone') {
-                            const sign = value.equal[0];
+                            const sign = value[0];
                             const validSign = /^[+-]$/.test(sign);
-                            const offset = value.equal.slice(1);
+                            const offset = value.slice(1);
                             const validOffset = (isNumeric(offset) || isFloat(offset)) && offset >= -12 && offset <= 14;
                             if (!validSign || !validOffset) {
                                 return res.status(400).json({
@@ -1488,18 +1488,18 @@ const addVariable = async (req, res) => {
                                 });
                             }
                         }
-                        variableValue = value.equal.toString();
+                        variableValue = value.toString();
                         break;
 
                     case 'boolean':
-                        if (value.equal === undefined || !['true', 'false'].includes(value.equal.toString().toLowerCase())) {
+                        if (value === undefined || !['true', 'false'].includes(value.toString().toLowerCase())) {
                             return res.status(400).json({
                                 status: "failed",
                                 error: req.i18n.t('iot.invalidDataType'),
                                 message: {}
                             });
                         }
-                        variableValue = value.equal.toString().toLowerCase() === 'true';
+                        variableValue = value.toString().toLowerCase() === 'true';
                         break;
                 }
 
@@ -1583,7 +1583,7 @@ const updateVariable = async (req, res) => {
                         });
                     }
 
-                    variableName = variable.name;
+                    variableName = variable.type;
                     switch (variable.type.toString().toLowerCase()) {
                         case 'schedule':
                             let msk;
@@ -1717,18 +1717,18 @@ const updateVariable = async (req, res) => {
                             break;
 
                         case 'integer':
-                            if (value.equal === undefined || !isNumeric(value.equal)) {
+                            if (value === undefined || !isNumeric(value)) {
                                 return res.status(400).json({
                                     status: "failed",
                                     error: req.i18n.t('iot.invalidDataType'),
                                     message: {}
                                 });
                             }
-                            variableValue = Number(value.equal);
+                            variableValue = Number(value);
                             break;
 
                         case 'float':
-                            if (value.equal === undefined || (!isFloat(value.equal) && !isNumeric(value.equal))) {
+                            if (value === undefined || (!isFloat(value) && !isNumeric(value))) {
                                 return res.status(400).json({
                                     status: "failed",
                                     error: req.i18n.t('iot.invalidDataType'),
@@ -1736,7 +1736,7 @@ const updateVariable = async (req, res) => {
                                 });
                             }
                             if (name === 'dailyOnlineRefreshes') {
-                                if (value.equal <= 0 || value.equal > 24) {
+                                if (value <= 0 || value > 24) {
                                     return res.status(400).json({
                                         status: "failed",
                                         error: req.i18n.t('iot.invalidDataType'),
@@ -1744,11 +1744,11 @@ const updateVariable = async (req, res) => {
                                     });
                                 }
                             }
-                            variableValue = Number(value.equal);
+                            variableValue = Number(value);
                             break;
 
                         case 'string':
-                            if (value.equal === undefined) {
+                            if (value === undefined) {
                                 return res.status(400).json({
                                     status: "failed",
                                     error: req.i18n.t('iot.invalidDataType'),
@@ -1756,9 +1756,9 @@ const updateVariable = async (req, res) => {
                                 });
                             }
                             if (name === 'gmtZone') {
-                                const sign = value.equal[0];
+                                const sign = value[0];
                                 const validSign = /^[+-]$/.test(sign);
-                                const offset = value.equal.slice(1);
+                                const offset = value.slice(1);
                                 const validOffset = (isNumeric(offset) || isFloat(offset)) && offset >= -12 && offset <= 14;
                                 if (!validSign || !validOffset) {
                                     return res.status(400).json({
@@ -1768,18 +1768,18 @@ const updateVariable = async (req, res) => {
                                     });
                                 }
                             }
-                            variableValue = value.equal.toString();
+                            variableValue = value.toString();
                             break;
 
                         case 'boolean':
-                            if (value.equal === undefined || !['true', 'false'].includes(value.equal.toString().toLowerCase())) {
+                            if (!['true', 'false'].includes(value.toString().toLowerCase())) {
                                 return res.status(400).json({
                                     status: "failed",
                                     error: req.i18n.t('iot.invalidDataType'),
                                     message: {}
                                 });
                             }
-                            variableValue = value.equal.toString().toLowerCase() === 'true';
+                            variableValue = value.toString().toLowerCase() === 'true';
                             break;
                     }
 
