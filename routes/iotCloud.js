@@ -11,7 +11,7 @@ router.post('/delete-site', authorize('Access', ['User', 'Admin']), iotCloud.del
 
 router.post('/register-control-unit', authorize('Access', ['Admin']), iotCloud.registerControlUnit);
 
-router.post('/gear-control-unit', authorize('Access', ['Admin']), iotCloud.gearControlUnit);
+router.post('/preconfigure-control-unit', authorize('Access', ['Admin']), iotCloud.preConfigureControlUnit);
 
 router.post('/configure-control-unit', authorize('Access', ['User', 'Admin']), iotCloud.configureControlUnit);
 
