@@ -14,9 +14,7 @@ const {getServiceData} = require('../controllers/services');
 const Payment = require('../models/payments')
 const {integer} = require("twilio/lib/base/deserialize");
 const {createSmsRecord} = require("./smsRecords");
-const crypto = require('../utils/crypto');
 const {getSellingPrice} = require("./plans");
-const Variables = require("../models/variables");
 const {timeAgo} = require("../utils/dateUtils");
 
 const createUser = async (req, res) => {

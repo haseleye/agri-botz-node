@@ -8,6 +8,7 @@ const Variables = require('../models/variables');
 const {isNumeric, isFloat} = require('../utils/numberUtils');
 const {generateUUID} = require('../utils/codeGenerator');
 const {timeAgo} = require("../utils/dateUtils");
+const {isValidCity} = require("../utils/gmtCities");
 
 const VARIABLE_CATEGORIES = {
     SENSORS: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity",],
@@ -1555,7 +1556,7 @@ const addVariable = async (req, res) => {
 const updateVariable = async (req, res) => {
     try {
         const {variableId, value, user: {id: userID}} = await req.body;
-        let variableName, variableValue;
+        let variableName, variableType, variableValue;
 
         if (variableId === undefined || value === undefined) {
             return res.status(400).json({
@@ -1583,8 +1584,10 @@ const updateVariable = async (req, res) => {
                         });
                     }
 
-                    variableName = variable.type;
-                    switch (variable.type.toString().toLowerCase()) {
+                    variableName = variable.name;
+                    variableType = variable.type.toString().toLowerCase();
+
+                    switch (variableType) {
                         case 'schedule':
                             let msk;
                             const repeatEvery = ['does not repeat', 'hour', 'day', 'week', 'month', 'year'];
@@ -1735,7 +1738,7 @@ const updateVariable = async (req, res) => {
                                     message: {}
                                 });
                             }
-                            if (name === 'dailyOnlineRefreshes') {
+                            if (variableName === 'dailyOnlineRefreshes') {
                                 if (value <= 0 || value > 24) {
                                     return res.status(400).json({
                                         status: "failed",
@@ -1755,12 +1758,9 @@ const updateVariable = async (req, res) => {
                                     message: {}
                                 });
                             }
-                            if (name === 'gmtZone') {
-                                const sign = value[0];
-                                const validSign = /^[+-]$/.test(sign);
-                                const offset = value.slice(1);
-                                const validOffset = (isNumeric(offset) || isFloat(offset)) && offset >= -12 && offset <= 14;
-                                if (!validSign || !validOffset) {
+                            if (variableName === 'gmtZone') {
+                                const validCity = isValidCity(value);
+                                if (!validCity) {
                                     return res.status(400).json({
                                         status: "failed",
                                         error: req.i18n.t('iot.invalidDataType'),
@@ -1786,7 +1786,10 @@ const updateVariable = async (req, res) => {
                     const propertyValue = {
                         value: variableValue
                     };
-                    await connectClient()
+                    await Promise.resolve({
+                        propertiesV2Publish: () => Promise.resolve()
+                    })
+                    // await connectClient()
                         .then((cloudApi) => {
                             cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
                                 .then(() => {
@@ -3284,27 +3287,27 @@ const createScheduleMask = (repeatEvery, intervalValue = 1, selectedDays = null,
 }
 
 module.exports = {
-    addSite,
-    renameSite,
-    deleteSite,
-    registerControlUnit,
-    preConfigureControlUnit,
-    configureControlUnit,
-    addDevice,
-    updateGadgetGPS,
-    addGadget,
-    renameGadget,
-    addVariable,
-    updateVariable,
-    activateSite,
-    deactivateSite,
-    terminateSite,
-    deactivateDevice,
     activateDevice,
-    terminateDevice,
-    getUserSites,
-    getSiteInfo,
-    getGadgetInfo,
+    activateSite,
+    addDevice,
+    addGadget,
+    addSite,
+    addVariable,
+    configureControlUnit,
+    deactivateDevice,
+    deactivateSite,
+    deleteSite,
     getDeviceInfo,
+    getGadgetInfo,
+    getSiteInfo,
+    getUserSites,
+    preConfigureControlUnit,
+    registerControlUnit,
+    renameGadget,
+    terminateDevice,
+    renameSite,
+    terminateSite,
+    updateGadgetGPS,
+    updateVariable,
     VARIABLE_CATEGORIES
 };

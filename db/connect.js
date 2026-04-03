@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const  dbName = 'Agri_Botz'
 const connectionString =
-    `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_PASSWORD}@cluster0.l6lituu.mongodb.net/${dbName}
+    `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_PASSWORD}@cluster0.bk3nstw.mongodb.net/${dbName}
     ?retryWrites=true&w=majority`
 
 const connectDB = async () => {
