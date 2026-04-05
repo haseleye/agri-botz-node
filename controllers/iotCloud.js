@@ -789,23 +789,35 @@ const configureControlUnit = async (req, res) => {
                 if (controlUnit.deviceId === undefined) {
                     return res.status(400).json({
                         status: "failed",
-                        error: req.i18n.t('iot.notConfiguredCU'),
+                        error: req.i18n.t('iot.notPreConfiguredCU'),
                         message: {}
                     });
                 }
 
                 await Devices.findOne({_id: controlUnit.deviceId}, {secretKey: 1})
-                    .then((device) => {
-                        res.status(200).json({
-                            status: "success",
-                            error: "",
-                            message: {
-                                deviceId: controlUnit.deviceId,
-                                secretKey: device.secretKey,
-                                config: controlUnit.config,
-                                info: req.i18n.t('iot.configured'),
-                            }
-                        });
+                    .then(async (device) => {
+                        await ControlUnits.updateOne({_id: serialNumber}, {isConfigured: true})
+                            .then(() => {
+                                res.status(200).json({
+                                    status: "success",
+                                    error: "",
+                                    message: {
+                                        deviceId: controlUnit.deviceId,
+                                        secretKey: device.secretKey,
+                                        config: controlUnit.config,
+                                        info: req.i18n.t('iot.configured'),
+                                    }
+                                });
+                            })
+                            .catch((err) => {
+                                res.status(500).json({
+                                    status: "failed",
+                                    error: req.i18n.t('general.internalError'),
+                                    message: {
+                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                    }
+                                });
+                            });
                     })
                     .catch((err) => {
                         res.status(500).json({

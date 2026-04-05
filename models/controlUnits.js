@@ -13,6 +13,10 @@ const controlUnitSchema = new Schema({
         solenoid2Pin2: Number,
         relay1Pin: Number,
         relay2Pin: Number,
+    },
+    isConfigured: {
+        type: 'boolean',
+        default: false,
     }
 })
 
