@@ -997,9 +997,9 @@ const updateGadgetGPS = async (req, res) => {
 
 const addGadget = async (req, res) => {
     try {
-        const {name, siteId, deviceId} = await req.body;
+        const {name, siteId, serialNumber} = await req.body;
 
-        if (name === undefined || siteId === undefined || deviceId === undefined) {
+        if (name === undefined || siteId === undefined || serialNumber === undefined) {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.notComplete'),
@@ -1017,33 +1017,9 @@ const addGadget = async (req, res) => {
                     });
                 }
 
-                let duplicate;
-                user.sites.map((site) => {
-                    if (site.id === siteId) {
-                        const gadgetsSet = new Set();
-                        site.gadgets.map((gadget) => {
-                            const gadgetString =  gadget.name.toString();
-                            gadgetsSet.add(gadgetString);
-                        });
-                        const count = gadgetsSet.size;
-                        const newGadgetString =  name.toString();
-                        gadgetsSet.add(newGadgetString);
-                        const newCount = gadgetsSet.size;
-                        duplicate = count === newCount;
-                    }
-                });
-
-                if (duplicate) {
-                    return res.status(400).json({
-                        status: "failed",
-                        error: req.i18n.t('iot.duplicated'),
-                        message: {}
-                    });
-                }
-
-                await Devices.findOne({_id: deviceId}, {userID: 1, siteId: 1})
-                    .then(async (device) => {
-                        if (!device) {
+                await ControlUnits.findOne({_id: serialNumber}, {deviceId: 1, isConfigured: 1})
+                    .then(async (controlUnit) => {
+                        if (!controlUnit) {
                             return res.status(400).json({
                                 status: "failed",
                                 error: req.i18n.t('iot.notCorrect'),
@@ -1051,32 +1027,93 @@ const addGadget = async (req, res) => {
                             });
                         }
 
-                        if (device.siteId !== undefined) {
-                            return res.status(401).json({
+                        const deviceId = controlUnit.deviceId;
+                        if (deviceId === undefined) {
+                            return res.status(400).json({
                                 status: "failed",
-                                error: req.i18n.t('iot.occupied'),
+                                error: req.i18n.t('iot.notPreConfiguredCU'),
                                 message: {}
                             });
                         }
 
-                        await Devices.updateOne({_id: deviceId}, {userID: user._id, siteId})
-                            .then(() => {
-                                user.sites.map(async (site) => {
-                                    if (site.id === siteId) {
-                                        const gadget = {id: generateUUID(), name, deviceId};
-                                        site.gadgets.push(gadget);
+                        if (!controlUnit.isConfigured) {
+                            return res.status(400).json({
+                                status: "failed",
+                                error: req.i18n.t('iot.notConfiguredCU'),
+                                message: {}
+                            });
+                        }
 
-                                        await user.save()
-                                            .then(() => {
-                                                Variables.updateMany({deviceId}, {userID: user._id})
+                        let duplicate;
+                        user.sites.map((site) => {
+                            if (site.id === siteId) {
+                                const gadgetsSet = new Set();
+                                site.gadgets.map((gadget) => {
+                                    const gadgetString = gadget.name.toString();
+                                    gadgetsSet.add(gadgetString);
+                                });
+                                const count = gadgetsSet.size;
+                                const newGadgetString = name.toString();
+                                gadgetsSet.add(newGadgetString);
+                                const newCount = gadgetsSet.size;
+                                duplicate = count === newCount;
+                            }
+                        });
+
+                        if (duplicate) {
+                            return res.status(400).json({
+                                status: "failed",
+                                error: req.i18n.t('iot.duplicated'),
+                                message: {}
+                            });
+                        }
+
+                        await Devices.findOne({_id: deviceId}, {userID: 1, siteId: 1})
+                            .then(async (device) => {
+                                if (!device) {
+                                    return res.status(400).json({
+                                        status: "failed",
+                                        error: req.i18n.t('iot.notCorrect'),
+                                        message: {}
+                                    });
+                                }
+
+                                if (device.siteId !== undefined) {
+                                    return res.status(401).json({
+                                        status: "failed",
+                                        error: req.i18n.t('iot.occupied'),
+                                        message: {}
+                                    });
+                                }
+
+                                await Devices.updateOne({_id: deviceId}, {userID: user._id, siteId})
+                                    .then(() => {
+                                        user.sites.map(async (site) => {
+                                            if (site.id === siteId) {
+                                                const gadget = {id: generateUUID(), name, serialNumber, deviceId};
+                                                site.gadgets.push(gadget);
+
+                                                await user.save()
                                                     .then(() => {
-                                                        res.status(200).json({
-                                                            status: "success",
-                                                            error: "",
-                                                            message: {
-                                                                gadgetId: gadget.id
-                                                            }
-                                                        });
+                                                        Variables.updateMany({deviceId}, {userID: user._id})
+                                                            .then(() => {
+                                                                res.status(200).json({
+                                                                    status: "success",
+                                                                    error: "",
+                                                                    message: {
+                                                                        gadgetId: gadget.id
+                                                                    }
+                                                                });
+                                                            })
+                                                            .catch((err) => {
+                                                                return res.status(500).json({
+                                                                    status: "failed",
+                                                                    error: req.i18n.t('general.internalError'),
+                                                                    message: {
+                                                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                                    }
+                                                                });
+                                                            });
                                                     })
                                                     .catch((err) => {
                                                         return res.status(500).json({
@@ -1087,18 +1124,18 @@ const addGadget = async (req, res) => {
                                                             }
                                                         });
                                                     });
-                                            })
-                                            .catch((err) => {
-                                                return res.status(500).json({
-                                                    status: "failed",
-                                                    error: req.i18n.t('general.internalError'),
-                                                    message: {
-                                                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
-                                                    }
-                                                });
-                                            });
-                                    }
-                                });
+                                            }
+                                        });
+                                    })
+                                    .catch((err) => {
+                                        res.status(500).json({
+                                            status: "failed",
+                                            error: req.i18n.t('general.internalError'),
+                                            message: {
+                                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                            }
+                                        });
+                                    });
                             })
                             .catch((err) => {
                                 res.status(500).json({
@@ -1109,6 +1146,7 @@ const addGadget = async (req, res) => {
                                     }
                                 });
                             });
+
                     })
                     .catch((err) => {
                         res.status(500).json({
@@ -1119,6 +1157,7 @@ const addGadget = async (req, res) => {
                             }
                         });
                     });
+
             })
             .catch((err) => {
                 res.status(500).json({

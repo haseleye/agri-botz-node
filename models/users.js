@@ -61,6 +61,7 @@ const userSchema = new Schema({
                     _id: false,
                     id: String,
                     name: String,
+                    serialNumber: String,
                     deviceId: String,
                     gps: {
                         lat: Number,
