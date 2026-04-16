@@ -1387,14 +1387,14 @@ const addVariable = async (req, res) => {
                         switch (name) {
                             case 'solenoid1State':
                             case 'solenoid2State':
-                            case 'solenoid1Manual':
-                            case 'solenoid2Manual':
                             case 'espRestart':
                             case 'isOnline':
                             case 'isTerminated':
                                 variableValue = false;
                                 break;
 
+                            case 'solenoid1Manual':
+                            case 'solenoid2Manual':
                             case 'deepSleepMode':
                             case 'isActive':
                                 variableValue = true;
