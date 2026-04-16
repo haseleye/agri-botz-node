@@ -1390,12 +1390,12 @@ const addVariable = async (req, res) => {
                             case 'espRestart':
                             case 'isOnline':
                             case 'isTerminated':
+                            case 'deepSleepMode':
                                 variableValue = false;
                                 break;
 
                             case 'solenoid1Manual':
                             case 'solenoid2Manual':
-                            case 'deepSleepMode':
                             case 'isActive':
                                 variableValue = true;
                                 break;
