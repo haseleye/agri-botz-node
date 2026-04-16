@@ -1299,10 +1299,10 @@ const renameGadget = async (req, res) => {
 
 const addVariable = async (req, res) => {
     try {
-        const {variableId, name, type, value, deviceId} = await req.body;
+        const {variableId, name, type, deviceId} = await req.body;
         let variableValue;
 
-        if (variableId === undefined || name === undefined || type === undefined || value === undefined || deviceId === undefined) {
+        if (variableId === undefined || name === undefined || type === undefined || deviceId === undefined) {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.notComplete'),
@@ -1358,200 +1358,49 @@ const addVariable = async (req, res) => {
 
                 switch (type.toString().toLowerCase()) {
                     case 'schedule':
-                        let msk;
-                        const repeatEvery = ['does not repeat', 'hour', 'day', 'week', 'month', 'year'];
-                        if (value.frm === undefined || !isNumeric(value.frm) || value.len === undefined || !isNumeric(value.len)
-                            || value.repeatEvery === undefined || !repeatEvery.includes(value.repeatEvery.toString().toLowerCase())) {
-                            return res.status(400).json({
-                                status: "failed",
-                                error: req.i18n.t('iot.invalidDataType'),
-                                message: {}
-                            });
-                        }
-
-                        switch (value.repeatEvery.toString().toLowerCase()) {
-                            case 'does not repeat':
-                                msk = createScheduleMask('does not repeat');
-                                if (msk === -1) {
-                                    return res.status(400).json({
-                                        status: "failed",
-                                        error: req.i18n.t('iot.invalidDataType'),
-                                        message: {}
-                                    });
-                                }
-                                variableValue = {
-                                    frm: value.frm,
-                                    to: 0,
-                                    len: value.len,
-                                    msk
-                                };
-                                break;
-
-                            case 'hour':
-                            case 'day':
-                                if (value.to === undefined || !isNumeric(value.to)) {
-                                    return res.status(400).json({
-                                        status: "failed",
-                                        error: req.i18n.t('iot.invalidDataType'),
-                                        message: {}
-                                    });
-                                }
-                                msk = createScheduleMask(value.repeatEvery.toString().toLocaleLowerCase());
-                                if (msk === -1) {
-                                    return res.status(400).json({
-                                        status: "failed",
-                                        error: req.i18n.t('iot.invalidDataType'),
-                                        message: {}
-                                    });
-                                }
-                                variableValue = {
-                                    frm: value.frm,
-                                    to: value.to,
-                                    len: value.len,
-                                    msk
-                                };
-                                break;
-
-                            case 'week':
-                                if (value.to === undefined || !isNumeric(value.to) || value.selectedDays === undefined
-                                    || !Array.isArray(value.selectedDays) || value.selectedDays.length === 0) {
-                                    return res.status(400).json({
-                                        status: "failed",
-                                        error: req.i18n.t('iot.invalidDataType'),
-                                        message: {}
-                                    });
-                                }
-                                msk = createScheduleMask('week', 1, value.selectedDays);
-                                if (msk === -1) {
-                                    return res.status(400).json({
-                                        status: "failed",
-                                        error: req.i18n.t('iot.invalidDataType'),
-                                        message: {}
-                                    });
-                                }
-                                variableValue = {
-                                    frm: value.frm,
-                                    to: value.to,
-                                    len: value.len,
-                                    msk
-                                };
-                                break;
-
-                            case 'month':
-                                if (value.to === undefined || !isNumeric(value.to) || value.dayOfMonth === undefined) {
-                                    return res.status(400).json({
-                                        status: "failed",
-                                        error: req.i18n.t('iot.invalidDataType'),
-                                        message: {}
-                                    });
-                                }
-                                msk = createScheduleMask('month', 1, null, value.dayOfMonth);
-                                if (msk === -1) {
-                                    return res.status(400).json({
-                                        status: "failed",
-                                        error: req.i18n.t('iot.invalidDataType'),
-                                        message: {}
-                                    });
-                                }
-                                variableValue = {
-                                    frm: value.frm,
-                                    to: value.to,
-                                    len: value.len,
-                                    msk
-                                };
-                                break;
-
-                            case 'year':
-                                if (value.to === undefined || !isNumeric(value.to)
-                                    || value.month === undefined || value.dayOfMonth === undefined) {
-                                    return res.status(400).json({
-                                        status: "failed",
-                                        error: req.i18n.t('iot.invalidDataType'),
-                                        message: {}
-                                    });
-                                }
-                                msk = createScheduleMask('year', 1, null, value.dayOfMonth, value.month);
-                                if (msk === -1) {
-                                    return res.status(400).json({
-                                        status: "failed",
-                                        error: req.i18n.t('iot.invalidDataType'),
-                                        message: {}
-                                    });
-                                }
-                                variableValue = {
-                                    frm: value.frm,
-                                    to: value.to,
-                                    len: value.len,
-                                    msk
-                                };
-                                break;
-                        }
+                        variableValue = null;
                         break;
 
                     case 'integer':
-                        if (value === undefined || !isNumeric(value)) {
-                            return res.status(400).json({
-                                status: "failed",
-                                error: req.i18n.t('iot.invalidDataType'),
-                                message: {}
-                            });
-                        }
-                        variableValue = Number(value);
+                        variableValue = 0;
                         break;
 
                     case 'float':
-                        if (value === undefined || (!isFloat(value) && !isNumeric(value))) {
-                            return res.status(400).json({
-                                status: "failed",
-                                error: req.i18n.t('iot.invalidDataType'),
-                                message: {}
-                            });
-                        }
                         if (name === 'dailyOnlineRefreshes') {
-                            if (value <= 0 || value > 24) {
-                                return res.status(400).json({
-                                    status: "failed",
-                                    error: req.i18n.t('iot.invalidDataType'),
-                                    message: {}
-                                });
-                            }
+                            variableValue = 12.0;
                         }
-                        variableValue = Number(value);
+                        else {
+                            variableValue = 0.0;
+                        }
                         break;
 
                     case 'string':
-                        if (value === undefined) {
-                            return res.status(400).json({
-                                status: "failed",
-                                error: req.i18n.t('iot.invalidDataType'),
-                                message: {}
-                            });
-                        }
                         if (name === 'gmtZone') {
-                            const sign = value[0];
-                            const validSign = /^[+-]$/.test(sign);
-                            const offset = value.slice(1);
-                            const validOffset = (isNumeric(offset) || isFloat(offset)) && offset >= -12 && offset <= 14;
-                            if (!validSign || !validOffset) {
-                                return res.status(400).json({
-                                    status: "failed",
-                                    error: req.i18n.t('iot.invalidDataType'),
-                                    message: {}
-                                });
-                            }
+                            variableValue = 'Africa/Cairo';
                         }
-                        variableValue = value.toString();
+                        else {
+                            variableValue = '';
+                        }
                         break;
 
                     case 'boolean':
-                        if (value === undefined || !['true', 'false'].includes(value.toString().toLowerCase())) {
-                            return res.status(400).json({
-                                status: "failed",
-                                error: req.i18n.t('iot.invalidDataType'),
-                                message: {}
-                            });
+                        switch (name) {
+                            case 'solenoid1State':
+                            case 'solenoid2State':
+                            case 'solenoid1Manual':
+                            case 'solenoid2Manual':
+                            case 'espRestart':
+                            case 'isOnline':
+                            case 'isTerminated':
+                                variableValue = false;
+                                break;
+
+                            case 'deepSleepMode':
+                            case 'isActive':
+                                variableValue = true;
+                                break;
+
                         }
-                        variableValue = value.toString().toLowerCase() === 'true';
                         break;
                 }
 
@@ -1565,23 +1414,73 @@ const addVariable = async (req, res) => {
                     thingId: device.thingId,
                     userID: device.userID
                 };
-                await Variables.create(variableData)
-                    .then(() => {
-                        res.status(200).json({
-                            status: "success",
-                            error: "",
-                            message: {}
+
+                if (variableValue === null) {
+                    await Variables.create(variableData)
+                        .then(() => {
+                            res.status(200).json({
+                                status: "success",
+                                error: "",
+                                message: {}
+                            });
+                        })
+                        .catch((err) => {
+                            res.status(500).json({
+                                status: "failed",
+                                error: req.i18n.t('general.internalError'),
+                                message: {
+                                    info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                }
+                            });
                         });
-                    })
-                    .catch((err) => {
-                        res.status(500).json({
-                            status: "failed",
-                            error: req.i18n.t('general.internalError'),
-                            message: {
-                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
-                            }
+                }
+                else {
+                    await connectClient()
+                        .then((cloudApi) => {
+                            const propertyValue = {
+                                value: variableValue
+                            };
+                            cloudApi.propertiesV2Publish(device.thingId, variableId, propertyValue)
+                                .then(async () => {
+                                    await Variables.create(variableData)
+                                        .then(() => {
+                                            res.status(200).json({
+                                                status: "success",
+                                                error: "",
+                                                message: {}
+                                            });
+                                        })
+                                        .catch((err) => {
+                                            res.status(500).json({
+                                                status: "failed",
+                                                error: req.i18n.t('general.internalError'),
+                                                message: {
+                                                    info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                }
+                                            });
+                                        });
+                                })
+                                .catch((err) => {
+                                    res.status(500).json({
+                                        status: "failed",
+                                        error: req.i18n.t('general.internalError'),
+                                        message: {
+                                            info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                        }
+                                    });
+                                });
+                        })
+                        .catch((err) => {
+                            res.status(500).json({
+                                status: "failed",
+                                error: req.i18n.t('general.internalError'),
+                                message: {
+                                    info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                }
+                            });
                         });
-                    });
+                }
+
             })
             .catch((err) => {
                 res.status(500).json({
@@ -1837,10 +1736,12 @@ const updateVariable = async (req, res) => {
                     const propertyValue = {
                         value: variableValue
                     };
-                    await Promise.resolve({
-                        propertiesV2Publish: () => Promise.resolve()
-                    })
-                    // await connectClient()
+
+                    /* Uncomment the following 3 lines and comment the 4th one when Arduino Cloud subscription is expired*/
+                    // await Promise.resolve({
+                    //     propertiesV2Publish: () => Promise.resolve()
+                    // })
+                    await connectClient()
                         .then((cloudApi) => {
                             cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
                                 .then(() => {
