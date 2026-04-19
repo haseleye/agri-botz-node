@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const iotCloud = require('../controllers/iotCloud')
+const iotCloud = require('../controllers/iotCloud');
+const iotCloudEvents = require('../controllers/iotCloudEvents');
 const {authorize} = require("../middleware/auth");
 
 router.post('/add-site', authorize('Access', ['User', 'Admin']), iotCloud.addSite);
@@ -44,6 +45,8 @@ router.post('/get-user-sites', authorize('Access', ['User', 'Admin']), iotCloud.
 router.post('/get-site-info', authorize('Access', ['User', 'Admin']), iotCloud.getSiteInfo);
 
 router.post('/get-gadget-info', authorize('Access', ['User', 'Admin']), iotCloud.getGadgetInfo);
+
+router.get('/variable-events', authorize('Access', ['User', 'Admin']), iotCloudEvents.variableEvents);
 
 router.post('/get-device-info', authorize('Access', ['Admin']), iotCloud.getDeviceInfo);
 

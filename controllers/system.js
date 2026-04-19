@@ -4,6 +4,7 @@ const User = require("./users");
 const DataLoggers = require('../models/dataLoggers');
 const {VARIABLE_CATEGORIES} = require('./iotCloud');
 const Variables = require('../models/variables');
+const {emitVariableUpdate} = require('./iotCloudEvents');
 
 const updatePersonImagesCB = async (req, res) => {
     try {
@@ -79,6 +80,7 @@ const arduinoWebhook = async (req, res) => {
                 dataLogger = {};
 
                 dataUpdate.variableId = variable.id;
+                dataUpdate.variableName = variable.name;
                 dataUpdate.value = variable.value
                 dataUpdate.updatedAt = variable.updated_at;
                 dataUpdateList.push(dataUpdate);
@@ -88,9 +90,22 @@ const arduinoWebhook = async (req, res) => {
 
         await DataLoggers.create(dataLoggerList);
 
-        dataUpdateList.map(async (update) => {
-            await Variables.updateOne({_id: update.variableId}, {value: update.value, updatedAt: update.updatedAt});
-        });
+        for (const update of dataUpdateList) {
+            await Variables.updateOne(
+                {_id: update.variableId},
+                {value: update.value, updatedAt: update.updatedAt}
+            );
+
+            if (['isOnline', 'solenoid1State'].includes(update.variableName)) {
+                emitVariableUpdate({
+                    variableId: update.variableId,
+                    variableName: update.variableName,
+                    value: update.value,
+                    updatedAt: update.updatedAt,
+                    deviceId
+                });
+            }
+        }
 
     }
     catch (err) {
