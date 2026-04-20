@@ -8,7 +8,7 @@ const Variables = require('../models/variables');
 const {isNumeric, isFloat} = require('../utils/numberUtils');
 const {generateUUID} = require('../utils/codeGenerator');
 const {timeAgo} = require("../utils/dateUtils");
-const {isValidCity} = require("../utils/gmtCities");
+const {isValidCity, getTimeZoneOffset} = require("../utils/gmtCities");
 
 const VARIABLE_CATEGORIES = {
     SENSORS: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity",],
@@ -1376,7 +1376,7 @@ const addVariable = async (req, res) => {
 
                     case 'string':
                         if (name === 'gmtZone') {
-                            variableValue = 'Africa/Cairo';
+                            variableValue = getTimeZoneOffset('Africa/Cairo');
                         }
                         else {
                             variableValue = '';
@@ -1442,6 +1442,7 @@ const addVariable = async (req, res) => {
                             };
                             cloudApi.propertiesV2Publish(device.thingId, variableId, propertyValue)
                                 .then(async () => {
+                                    if (name === 'gmtZone') variableData.value = 'Africa/Cairo';
                                     await Variables.create(variableData)
                                         .then(() => {
                                             res.status(200).json({
@@ -1718,7 +1719,7 @@ const updateVariable = async (req, res) => {
                                     });
                                 }
                             }
-                            variableValue = value.toString();
+                            variableValue = getTimeZoneOffset(value);
                             break;
 
                         case 'boolean':
@@ -1745,6 +1746,7 @@ const updateVariable = async (req, res) => {
                         .then((cloudApi) => {
                             cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
                                 .then(() => {
+                                    if (variableName === 'gmtZone') propertyValue.value = value;
                                     Variables.updateOne({_id: variableId}, {value: variableValue, updatedAt: new Date()})
                                         .then(() => {
                                             return res.status(200).json({
