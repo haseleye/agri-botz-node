@@ -1746,7 +1746,7 @@ const updateVariable = async (req, res) => {
                         .then((cloudApi) => {
                             cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
                                 .then(() => {
-                                    if (variableName === 'gmtZone') propertyValue.value = value;
+                                    if (variableName === 'gmtZone') variableValue = value;
                                     Variables.updateOne({_id: variableId}, {value: variableValue, updatedAt: new Date()})
                                         .then(() => {
                                             return res.status(200).json({
