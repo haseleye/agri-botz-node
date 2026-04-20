@@ -1,17 +1,17 @@
 
-function isValidCity (cityName) {
+function isValidCity (timeZone) {
     try {
-        new Intl.DateTimeFormat("en-US", { timeZone: cityName });
+        new Intl.DateTimeFormat("en-US", { timeZone });
         return true;
     } catch {
         return false;
     }
 }
 
-function getTimeZoneOffset(cityName) {
+function getTimeZoneOffset(timeZone) {
 
     const formatter = new Intl.DateTimeFormat("en-US", {
-        timeZone: cityName,
+        timeZone,
         timeZoneName: "shortOffset",
     });
 
