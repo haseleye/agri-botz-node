@@ -1738,22 +1738,47 @@ const updateVariable = async (req, res) => {
                         value: variableValue
                     };
 
-                    /* Uncomment the following 3 lines and comment the 4th one when Arduino Cloud subscription is expired*/
-                    // await Promise.resolve({
-                    //     propertiesV2Publish: () => Promise.resolve()
-                    // })
-                    await connectClient()
-                        .then((cloudApi) => {
-                            cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
-                                .then(() => {
-                                    if (variableName === 'gmtZone') variableValue = value;
-                                    Variables.updateOne({_id: variableId}, {value: variableValue, updatedAt: new Date()})
+                    Variables.findOne({deviceId: variable.deviceId, name: 'gmtZone'})
+                        .then(async (timeZoneVariable) => {
+                            const timeZone = timeZoneVariable.value;
+
+                            /* Uncomment the following 3 lines and comment the 4th one when Arduino Cloud subscription is expired*/
+                            // await Promise.resolve({
+                            //     propertiesV2Publish: () => Promise.resolve()
+                            // })
+                            await connectClient()
+                                .then((cloudApi) => {
+                                    if (variableType === 'schedule') {
+                                        propertyValue.value.frm += timeZone * 3600;
+                                        propertyValue.value.to += timeZone * 3600;
+                                    }
+                                    cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
                                         .then(() => {
-                                            return res.status(200).json({
-                                                status: "success",
-                                                error: "",
-                                                message: {}
-                                            });
+                                            if (variableType === 'schedule') {
+                                                propertyValue.value.frm -= timeZone * 3600;
+                                                propertyValue.value.to -= timeZone * 3600;
+                                            }
+                                            if (variableName === 'gmtZone') variableValue = value;
+                                            Variables.updateOne({_id: variableId}, {
+                                                value: variableValue,
+                                                updatedAt: new Date()
+                                            })
+                                                .then(() => {
+                                                    return res.status(200).json({
+                                                        status: "success",
+                                                        error: "",
+                                                        message: {}
+                                                    });
+                                                })
+                                                .catch((err) => {
+                                                    res.status(500).json({
+                                                        status: "failed",
+                                                        error: req.i18n.t('general.internalError'),
+                                                        message: {
+                                                            info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                                                        }
+                                                    });
+                                                });
                                         })
                                         .catch((err) => {
                                             res.status(500).json({
