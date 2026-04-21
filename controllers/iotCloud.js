@@ -1740,7 +1740,7 @@ const updateVariable = async (req, res) => {
 
                     Variables.findOne({deviceId: variable.deviceId, name: 'gmtZone'})
                         .then(async (timeZoneVariable) => {
-                            const timeZone = timeZoneVariable.value;
+                            const timeZoneOffset = getTimeZoneOffset(timeZoneVariable.value);
 
                             /* Uncomment the following 3 lines and comment the 4th one when Arduino Cloud subscription is expired*/
                             // await Promise.resolve({
@@ -1749,14 +1749,14 @@ const updateVariable = async (req, res) => {
                             await connectClient()
                                 .then((cloudApi) => {
                                     if (variableType === 'schedule') {
-                                        propertyValue.value.frm += timeZone * 3600;
-                                        propertyValue.value.to += timeZone * 3600;
+                                        propertyValue.value.frm += timeZoneOffset * 3600;
+                                        propertyValue.value.to += timeZoneOffset * 3600;
                                     }
                                     cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
                                         .then(() => {
                                             if (variableType === 'schedule') {
-                                                propertyValue.value.frm -= timeZone * 3600;
-                                                propertyValue.value.to -= timeZone * 3600;
+                                                propertyValue.value.frm -= timeZoneOffset * 3600;
+                                                propertyValue.value.to -= timeZoneOffset * 3600;
                                             }
                                             if (variableName === 'gmtZone') variableValue = value;
                                             Variables.updateOne({_id: variableId}, {
