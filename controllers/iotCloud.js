@@ -1542,7 +1542,10 @@ const updateVariable = async (req, res) => {
                         case 'schedule':
                             let msk;
                             const repeatEvery = ['does not repeat', 'hour', 'day', 'week', 'month', 'year'];
-                            if (value.frm === undefined || !isNumeric(value.frm) || value.len === undefined || !isNumeric(value.len)
+                            if (value === null) {
+                                variableValue = null;
+                            }
+                            else if (value.frm === undefined || !isNumeric(value.frm) || value.len === undefined || !isNumeric(value.len)
                                 || value.repeatEvery === undefined || !repeatEvery.includes(value.repeatEvery.toString().toLowerCase())) {
                                 return res.status(400).json({
                                     status: "failed",
@@ -1550,123 +1553,124 @@ const updateVariable = async (req, res) => {
                                     message: {}
                                 });
                             }
+                            else {
+                                switch (value.repeatEvery.toString().toLowerCase()) {
+                                    case 'does not repeat':
+                                        msk = createScheduleMask('does not repeat');
+                                        if (msk === -1) {
+                                            return res.status(400).json({
+                                                status: "failed",
+                                                error: req.i18n.t('iot.invalidDataType'),
+                                                message: {}
+                                            });
+                                        }
+                                        variableValue = {
+                                            frm: value.frm,
+                                            to: 0,
+                                            len: value.len,
+                                            msk
+                                        };
+                                        break;
 
-                            switch (value.repeatEvery.toString().toLowerCase()) {
-                                case 'does not repeat':
-                                    msk = createScheduleMask('does not repeat');
-                                    if (msk === -1) {
-                                        return res.status(400).json({
-                                            status: "failed",
-                                            error: req.i18n.t('iot.invalidDataType'),
-                                            message: {}
-                                        });
-                                    }
-                                    variableValue = {
-                                        frm: value.frm,
-                                        to: 0,
-                                        len: value.len,
-                                        msk
-                                    };
-                                    break;
+                                    case 'hour':
+                                    case 'day':
+                                        if (value.to === undefined || !isNumeric(value.to)) {
+                                            return res.status(400).json({
+                                                status: "failed",
+                                                error: req.i18n.t('iot.invalidDataType'),
+                                                message: {}
+                                            });
+                                        }
+                                        msk = createScheduleMask(value.repeatEvery.toString().toLocaleLowerCase());
+                                        if (msk === -1) {
+                                            return res.status(400).json({
+                                                status: "failed",
+                                                error: req.i18n.t('iot.invalidDataType'),
+                                                message: {}
+                                            });
+                                        }
+                                        variableValue = {
+                                            frm: value.frm,
+                                            to: value.to,
+                                            len: value.len,
+                                            msk
+                                        };
+                                        break;
 
-                                case 'hour':
-                                case 'day':
-                                    if (value.to === undefined || !isNumeric(value.to)) {
-                                        return res.status(400).json({
-                                            status: "failed",
-                                            error: req.i18n.t('iot.invalidDataType'),
-                                            message: {}
-                                        });
-                                    }
-                                    msk = createScheduleMask(value.repeatEvery.toString().toLocaleLowerCase());
-                                    if (msk === -1) {
-                                        return res.status(400).json({
-                                            status: "failed",
-                                            error: req.i18n.t('iot.invalidDataType'),
-                                            message: {}
-                                        });
-                                    }
-                                    variableValue = {
-                                        frm: value.frm,
-                                        to: value.to,
-                                        len: value.len,
-                                        msk
-                                    };
-                                    break;
+                                    case 'week':
+                                        if (value.to === undefined || !isNumeric(value.to) || value.selectedDays === undefined
+                                            || !Array.isArray(value.selectedDays) || value.selectedDays.length === 0) {
+                                            return res.status(400).json({
+                                                status: "failed",
+                                                error: req.i18n.t('iot.invalidDataType'),
+                                                message: {}
+                                            });
+                                        }
+                                        msk = createScheduleMask('week', 1, value.selectedDays);
+                                        if (msk === -1) {
+                                            return res.status(400).json({
+                                                status: "failed",
+                                                error: req.i18n.t('iot.invalidDataType'),
+                                                message: {}
+                                            });
+                                        }
+                                        variableValue = {
+                                            frm: value.frm,
+                                            to: value.to,
+                                            len: value.len,
+                                            msk
+                                        };
+                                        break;
 
-                                case 'week':
-                                    if (value.to === undefined || !isNumeric(value.to) || value.selectedDays === undefined
-                                        || !Array.isArray(value.selectedDays) || value.selectedDays.length === 0) {
-                                        return res.status(400).json({
-                                            status: "failed",
-                                            error: req.i18n.t('iot.invalidDataType'),
-                                            message: {}
-                                        });
-                                    }
-                                    msk = createScheduleMask('week', 1, value.selectedDays);
-                                    if (msk === -1) {
-                                        return res.status(400).json({
-                                            status: "failed",
-                                            error: req.i18n.t('iot.invalidDataType'),
-                                            message: {}
-                                        });
-                                    }
-                                    variableValue = {
-                                        frm: value.frm,
-                                        to: value.to,
-                                        len: value.len,
-                                        msk
-                                    };
-                                    break;
+                                    case 'month':
+                                        if (value.to === undefined || !isNumeric(value.to) || value.dayOfMonth === undefined) {
+                                            return res.status(400).json({
+                                                status: "failed",
+                                                error: req.i18n.t('iot.invalidDataType'),
+                                                message: {}
+                                            });
+                                        }
+                                        msk = createScheduleMask('month', 1, null, value.dayOfMonth);
+                                        if (msk === -1) {
+                                            return res.status(400).json({
+                                                status: "failed",
+                                                error: req.i18n.t('iot.invalidDataType'),
+                                                message: {}
+                                            });
+                                        }
+                                        variableValue = {
+                                            frm: value.frm,
+                                            to: value.to,
+                                            len: value.len,
+                                            msk
+                                        };
+                                        break;
 
-                                case 'month':
-                                    if (value.to === undefined || !isNumeric(value.to) || value.dayOfMonth === undefined) {
-                                        return res.status(400).json({
-                                            status: "failed",
-                                            error: req.i18n.t('iot.invalidDataType'),
-                                            message: {}
-                                        });
-                                    }
-                                    msk = createScheduleMask('month', 1, null, value.dayOfMonth);
-                                    if (msk === -1) {
-                                        return res.status(400).json({
-                                            status: "failed",
-                                            error: req.i18n.t('iot.invalidDataType'),
-                                            message: {}
-                                        });
-                                    }
-                                    variableValue = {
-                                        frm: value.frm,
-                                        to: value.to,
-                                        len: value.len,
-                                        msk
-                                    };
-                                    break;
-
-                                case 'year':
-                                    if (value.to === undefined || !isNumeric(value.to)
-                                        || value.month === undefined || value.dayOfMonth === undefined) {
-                                        return res.status(400).json({
-                                            status: "failed",
-                                            error: req.i18n.t('iot.invalidDataType'),
-                                            message: {}
-                                        });
-                                    }
-                                    msk = createScheduleMask('year', 1, null, value.dayOfMonth, value.month);
-                                    if (msk === -1) {
-                                        return res.status(400).json({
-                                            status: "failed",
-                                            error: req.i18n.t('iot.invalidDataType'),
-                                            message: {}
-                                        });
-                                    }
-                                    variableValue = {
-                                        frm: value.frm,
-                                        to: value.to,
-                                        len: value.len,
-                                        msk
-                                    };
-                                    break;
+                                    case 'year':
+                                        if (value.to === undefined || !isNumeric(value.to)
+                                            || value.month === undefined || value.dayOfMonth === undefined) {
+                                            return res.status(400).json({
+                                                status: "failed",
+                                                error: req.i18n.t('iot.invalidDataType'),
+                                                message: {}
+                                            });
+                                        }
+                                        msk = createScheduleMask('year', 1, null, value.dayOfMonth, value.month);
+                                        if (msk === -1) {
+                                            return res.status(400).json({
+                                                status: "failed",
+                                                error: req.i18n.t('iot.invalidDataType'),
+                                                message: {}
+                                            });
+                                        }
+                                        variableValue = {
+                                            frm: value.frm,
+                                            to: value.to,
+                                            len: value.len,
+                                            msk
+                                        };
+                                        break;
+                                }
                             }
                             break;
 
@@ -1749,12 +1753,21 @@ const updateVariable = async (req, res) => {
                             await connectClient()
                                 .then((cloudApi) => {
                                     if (variableType === 'schedule') {
-                                        propertyValue.value.frm += timeZoneOffset * 3600;
-                                        propertyValue.value.to += timeZoneOffset * 3600;
+                                        if (value !== null) {
+                                            propertyValue.value.frm += timeZoneOffset * 3600;
+                                            propertyValue.value.to += timeZoneOffset * 3600;
+                                        }
+                                        else {
+                                            propertyValue.value = {};
+                                            propertyValue.value.frm = 0;
+                                            propertyValue.value.len = 0;
+                                            propertyValue.value.to = 0;
+                                            propertyValue.value.msk = 0;
+                                        }
                                     }
                                     cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
                                         .then(() => {
-                                            if (variableType === 'schedule') {
+                                            if (variableType === 'schedule' && value !== null) {
                                                 propertyValue.value.frm -= timeZoneOffset * 3600;
                                                 propertyValue.value.to -= timeZoneOffset * 3600;
                                             }
@@ -1781,6 +1794,7 @@ const updateVariable = async (req, res) => {
                                                 });
                                         })
                                         .catch((err) => {
+                                            console.log(err);
                                             res.status(500).json({
                                                 status: "failed",
                                                 error: req.i18n.t('general.internalError'),
