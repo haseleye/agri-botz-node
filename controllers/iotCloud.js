@@ -1755,7 +1755,9 @@ const updateVariable = async (req, res) => {
                                     if (variableType === 'schedule') {
                                         if (value !== null) {
                                             propertyValue.value.frm += timeZoneOffset * 3600;
-                                            propertyValue.value.to += timeZoneOffset * 3600;
+                                            if (propertyValue.value.to !== 0) {
+                                                propertyValue.value.to += timeZoneOffset * 3600;
+                                            }
                                         }
                                         else {
                                             propertyValue.value = {};
@@ -1769,7 +1771,9 @@ const updateVariable = async (req, res) => {
                                         .then(() => {
                                             if (variableType === 'schedule' && value !== null) {
                                                 propertyValue.value.frm -= timeZoneOffset * 3600;
-                                                propertyValue.value.to -= timeZoneOffset * 3600;
+                                                if (propertyValue.value.to !== 0) {
+                                                    propertyValue.value.to -= timeZoneOffset * 3600;
+                                                }
                                             }
                                             if (variableName === 'gmtZone') variableValue = value;
                                             Variables.updateOne({_id: variableId}, {
