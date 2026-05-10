@@ -60,6 +60,52 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+app.get('/aldar/getAttachment', async (req, res) => {
+  try {
+    const { fileName } = req.query;
+
+    // Validate input
+    if (!fileName || typeof fileName !== 'string') {
+      return res.status(400).json({
+        status: "error",
+        message: "fileName is required in query parameters"
+      });
+    }
+
+    // Prevent directory traversal attacks
+    const safeFileName = path.basename(fileName);
+
+    const filePath = path.join(ATTACHMENTS_DIR, safeFileName);
+
+    // Check if the file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        status: "error",
+        message: "File not found"
+      });
+    }
+
+    // Read file as Base64
+    const fileData = fs.readFileSync(filePath, { encoding: 'base64' });
+
+    return res.json({
+      status: "success",
+      fileName: safeFileName,
+      fileSize: fs.statSync(filePath).size,
+      fileData: fileData // Base64 encoded data
+    });
+
+  } catch (err) {
+    console.error("Error in getAttachment:", err);
+
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+      details: err.message
+    });
+  }
+});
+
 app.post('/aldar/getAttachment', async (req, res) => {
   try {
     const { fileName } = req.body;
@@ -95,7 +141,8 @@ app.post('/aldar/getAttachment', async (req, res) => {
       fileData: fileData // Base64 encoded data
     });
 
-  } catch (err) {
+  }
+  catch (err) {
     console.error("Error in getAttachment:", err);
     return res.status(500).json({
       status: "error",
