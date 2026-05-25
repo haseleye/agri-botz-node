@@ -151,10 +151,10 @@
         .result-box {
             display: none;
             margin-top: 20px;
-            padding: 15px;
-            border-radius: 6px;
+            padding: 18px;
+            border-radius: 8px;
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 1.6;
             word-break: break-word;
         }
 
@@ -162,7 +162,7 @@
             display: block;
             background-color: #f0fdf4;
             border: 1px solid #bbf7d0;
-            color: #166534;
+            color: #14532d;
         }
 
         .result-box.error {
@@ -170,6 +170,22 @@
             background-color: #fef2f2;
             border: 1px solid #fecaca;
             color: #991b1b;
+        }
+
+        .result-title {
+            font-weight: 700;
+            font-size: 15px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .result-divider {
+            margin: 10px 0;
+            border: 0;
+            border-top: 1px solid dashed;
+            opacity: 0.25;
         }
     </style>
 </head>
@@ -286,23 +302,34 @@
             try {
                 data = JSON.parse(responseText);
             } catch(jsonErr) {
-                // If backend crashed with an HTML error page, capture the text description safely
                 throw new Error(`Server returned non-JSON response. Status ${response.status}.`);
             }
 
             if (response.ok && data.success) {
+                // Format the numbers with commas for presentation (e.g. 16,678)
+                const formattedRows = Number(data.totalRowsInserted).toLocaleString();
+
                 resultBox.classList.add('success');
-                resultBox.innerHTML = `<strong>Success!</strong><br>${data.message}<br>Total Rows Processed: <strong>${data.totalRowsInserted}</strong>`;
+                resultBox.innerHTML = `
+                    <div class="result-title">✓ Transaction Successful</div>
+                    <div>${data.message}</div>
+                    <hr class="result-divider" style="border-top-color: #bbf7d0;">
+                    <div>Database Status: <strong>${formattedRows} rows inserted</strong></div>
+                `;
             } else {
                 resultBox.classList.add('error');
-                resultBox.innerHTML = `<strong>Execution Failed:</strong><br>${data.message || 'Unknown Server Error'}`;
+                resultBox.innerHTML = `
+                    <div class="result-title">𐄂 Execution Failed</div>
+                    <div>${data.message || 'Unknown Server Error'}</div>
+                `;
             }
         } catch (err) {
-            // This catch block handles all connection dropouts, script failures, and parsing faults
             resultBox.classList.add('error');
-            resultBox.innerHTML = `<strong>Error Processed:</strong><br>${err.message}`;
+            resultBox.innerHTML = `
+                <div class="result-title">𐄂 Process Error</div>
+                <div>${err.message}</div>
+            `;
         } finally {
-            // Crucial: This section ALWAYS fires when execution completes or crashes
             loadingState.style.display = 'none';
             submitBtn.disabled = false;
         }
