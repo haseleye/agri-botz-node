@@ -180,6 +180,10 @@ app.post('/aldar/uploadAttachment', upload.single('file'), (req, res) => {
   }
 });
 
+app.get('/miral', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.post('/miral/getTenderRequirements', async (req, res) => {
   try {
     const etl = new TenderETLRunner(req.body);

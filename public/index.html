@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miral - Tender Requirements ETL Control Panel</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --background: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #cbd5e1;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            width: 100%;
+            max-width: 550px;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 24px;
+            color: var(--text);
+            font-size: 24px;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group.checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="date"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.15s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* Loading Spinner */
+        .spinner-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Result Alert Messages */
+        .result-box {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .result-box.success {
+            display: block;
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .result-box.error {
+            display: block;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Tender Requirements Sync</h2>
+    <form id="etlForm">
+        <div class="form-group">
+            <label for="fusionInstance">Fusion Instance URL</label>
+            <input type="text" id="fusionInstance" placeholder="https://your-instance.fa.ocs.oraclecloud.com" required>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="userId">User ID</label>
+                <input type="text" id="userId" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="reportPath">Report Path</label>
+            <input type="text" id="reportPath" placeholder="Custom/Human Resources/TenderReport.xdo" required>
+        </div>
+
+        <div class="form-group">
+            <label for="tenderNumber">Tender Number</label>
+            <input type="text" id="tenderNumber">
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="from">From Date</label>
+                <input type="date" id="from">
+            </div>
+            <div class="form-group">
+                <label for="to">To Date</label>
+                <input type="date" id="to">
+            </div>
+        </div>
+
+        <div class="form-group checkbox-group">
+            <input type="checkbox" id="allRounds" checked>
+            <label for="allRounds">Include All Rounds</label>
+        </div>
+
+        <button type="submit" id="submitBtn">Execute ETL Sync</button>
+    </form>
+
+    <div class="spinner-container" id="loadingState">
+        <div class="spinner"></div>
+        <div class="loading-text">Extracting data from Oracle Fusion and processing to Postgres...</div>
+    </div>
+
+    <div id="resultBox" class="result-box"></div>
+</div>
+
+<script>
+    document.getElementById('etlForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingState = document.getElementById('loadingState');
+        const resultBox = document.getElementById('resultBox');
+
+        // Hide old results and show loader
+        resultBox.className = 'result-box';
+        resultBox.style.display = 'none';
+        loadingState.style.display = 'flex';
+        submitBtn.disabled = true;
+
+        // Build request payload
+        const payload = {
+            fusionInstance: document.getElementById('fusionInstance').value,
+            userId: document.getElementById('userId').value,
+            password: document.getElementById('password').value,
+            reportPath: document.getElementById('reportPath').value,
+            tenderNumber: document.getElementById('tenderNumber').value,
+            allRounds: document.getElementById('allRounds').checked ? "1" : "0",
+            from: document.getElementById('from').value,
+            to: document.getElementById('to').value
+        };
+
+        try {
+            const response = await fetch('https://dev.agribotz.com:3001/miral/getTenderRequirements', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                resultBox.classList.add('success');
+                resultBox.innerHTML = `<strong>Success!</strong><br>${data.message}<br>Total Rows Processed: <strong>${data.totalRowsInserted}</strong>`;
+            } else {
+                resultBox.classList.add('error');
+                resultBox.innerHTML = `<strong>Execution Failed:</strong><br>${data.message || 'Unknown Server Error'}`;
+            }
+        } catch (err) {
+            resultBox.classList.add('error');
+            resultBox.innerHTML = `<strong>Network/Transport Error:</strong><br>${err.message}`;
+        } finally {
+            // Hide loader and enable button
+            loadingState.style.display = 'none';
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>
