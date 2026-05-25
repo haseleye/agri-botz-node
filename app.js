@@ -13,6 +13,8 @@ const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const multer = require('multer');
+const {login} = require("./controllers/users");
+const TenderETLRunner = require("./controllers/ETL");
 
 const {i18next, i18nextMiddleware} = require('./controllers/localization');
 const {authorize} = require('./middleware/auth');
@@ -25,7 +27,6 @@ const iotCloudRouter = require('./routes/iotCloud');
 const adminRouter = require('./routes/admin');
 const apiRouter = require('./routes/api');
 const sysRouter = require('./routes/system');
-const {login} = require("./controllers/users");
 
 const app = express();
 
@@ -175,6 +176,25 @@ app.post('/aldar/uploadAttachment', upload.single('file'), (req, res) => {
       status: "error",
       message: "Internal server error",
       details: err.message
+    });
+  }
+});
+
+app.post('/miral/getTenderRequirements', async (req, res) => {
+  try {
+    const etl = new TenderETLRunner(req.body);
+    const rowsInserted = await etl.run();
+
+    res.status(200).json({
+      success: true,
+      message: "Data successfully synced to PostgreSQL",
+      totalRowsInserted: rowsInserted
+    });
+  } catch (error) {
+    console.error("ETL Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "An error occurred during ETL processing."
     });
   }
 });
