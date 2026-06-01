@@ -2,7 +2,8 @@ const { Pool } = require('pg');
 
 // Initialize Postgres Connection Pool
 const pool = new Pool({
-    connectionString: 'postgresql://neondb_owner:npg_AhyE5UBte8sX@ep-polished-sunset-aqyo8d6y.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require'
+    // connectionString: 'postgresql://neondb_owner:npg_AhyE5UBte8sX@ep-polished-sunset-aqyo8d6y.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require'
+    connectionString: 'postgresql://unjustified_master_mason.EHAwRfHpSW:itEfspXyfUegVxjfmERhcIKgTXCbULMl@datalake.aleria.com:5432/EHAwRfHpSW'
 });
 
 // ======================================
