@@ -1,8 +1,10 @@
 const { Pool } = require('pg');
 
 // Initialize Postgres Connection Pool
+const userName = process.env.POSTGRES_USERNAME;
+const password = process.env.POSTGRES_PASSWORD;
 const pool = new Pool({
-    connectionString: 'postgresql://unjustified_master_mason.EHAwRfHpSW:itEfspXyfUegVxjfmERhcIKgTXCbULMl@datalake.aleria.com:5432/EHAwRfHpSW'
+    connectionString: `postgresql://${userName}:${password}@datalake.aleria.com:5432/EHAwRfHpSW`
 });
 
 // ======================================
