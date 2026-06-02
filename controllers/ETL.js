@@ -2,7 +2,6 @@ const { Pool } = require('pg');
 
 // Initialize Postgres Connection Pool
 const pool = new Pool({
-    // connectionString: 'postgresql://neondb_owner:npg_AhyE5UBte8sX@ep-polished-sunset-aqyo8d6y.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require'
     connectionString: 'postgresql://unjustified_master_mason.EHAwRfHpSW:itEfspXyfUegVxjfmERhcIKgTXCbULMl@datalake.aleria.com:5432/EHAwRfHpSW'
 });
 
@@ -20,6 +19,28 @@ class TenderETLRunner {
         this.allRounds = params.allRounds === "" ? "0" : String(params.allRounds);
         this.fromDate = params.from || "";
         this.toDate = params.to || "";
+
+        // Truncate Flag
+        this.truncateFirst = params.truncateTable === "1";
+
+        // Map Report Path to Target Table & Primary Key
+        const reportFilename = this.reportPath.split('/').pop();
+        switch (reportFilename) {
+            case 'GetTenderRequirementsReport.xdo':
+                this.targetTable = 'Tender_Requirements';
+                this.primaryKey = 'REQUIREMENT_ID';
+                break;
+            case 'GetTenderResponseRequirementsReport.xdo':
+                this.targetTable = 'Tender_Response_Requirements';
+                this.primaryKey = 'REQUIREMENT_ID';
+                break;
+            case 'GetAuctionResponseAllAttachmentsReport.xdo':
+                this.targetTable = 'Tender_Response_Attachments';
+                this.primaryKey = 'ATTACHMENT_ID';
+                break;
+            default:
+                throw new Error(`Unsupported report name provided: ${reportFilename}`);
+        }
 
         // Pagination State
         this.offset = 0;
@@ -48,6 +69,12 @@ class TenderETLRunner {
     async run() {
         if (this.allRounds !== "0" && this.allRounds !== "1") {
             throw new Error("All Rounds value should be 0 for current round only, or 1 for all rounds");
+        }
+
+        // Execute Truncate if requested
+        if (this.truncateFirst) {
+            console.log(`Truncating table "${this.targetTable}"...`);
+            await pool.query(`TRUNCATE TABLE "${this.targetTable}"`);
         }
 
         while (this.hasMore) {
@@ -155,11 +182,13 @@ class TenderETLRunner {
     async insertIntoDatabase(pageRows) {
         if (pageRows.length === 0) return;
 
+        // 1. Build Base Column Identifiers
         const dbColumns = this.keepIndex.map(i => `"${this.headers[i].trim()}"`);
         const values = [];
         const placeholders = [];
         let paramIdx = 1;
 
+        // 2. Build Value Matrix
         for (let r = 0; r < pageRows.length; r++) {
             let fields = this.parseCSVLine(pageRows[r]);
             let rowPlaceholders = [];
@@ -172,12 +201,23 @@ class TenderETLRunner {
             placeholders.push(`(${rowPlaceholders.join(', ')})`);
         }
 
-        const query = `INSERT INTO "Tender_Requirements" (${dbColumns.join(', ')}) VALUES ${placeholders.join(', ')}`;
+        // 3. Build Postgres UPSERT (ON CONFLICT) Clause
+        // We dynamically update every column EXCEPT the Primary Key
+        const updateSet = dbColumns
+            .filter(col => col.replace(/"/g, '') !== this.primaryKey)
+            .map(col => `${col} = EXCLUDED.${col}`)
+            .join(', ');
 
-        // Execute Bulk Insert
+        const conflictClause = updateSet.length > 0
+            ? `ON CONFLICT ("${this.primaryKey}") DO UPDATE SET ${updateSet}`
+            : `ON CONFLICT ("${this.primaryKey}") DO NOTHING`;
+
+        const query = `INSERT INTO "${this.targetTable}" (${dbColumns.join(', ')}) VALUES ${placeholders.join(', ')} ${conflictClause}`;
+
+        // Execute Bulk Upsert
         await pool.query(query, values);
         this.totalRowsInserted += pageRows.length;
-        console.log(`Inserted ${pageRows.length} rows. Total so far: ${this.totalRowsInserted}`);
+        console.log(`Processed ${pageRows.length} rows into ${this.targetTable}. Total so far: ${this.totalRowsInserted}`);
     }
 
     async fetchReportPage(p_offset, p_limit) {
