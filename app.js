@@ -23,6 +23,7 @@ const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const plansRouter = require('./routes/plans')
 const paymentsRouter = require('./routes/payments');
+const databaseRouter = require('./routes/initDatabase');
 const iotCloudRouter = require('./routes/iotCloud');
 const adminRouter = require('./routes/admin');
 const apiRouter = require('./routes/api');
@@ -209,6 +210,7 @@ app.use(checkAppLang);
 app.use('/users', usersRouter);
 app.use('/plans', plansRouter);
 app.use('/payments', paymentsRouter);
+app.use('/database', databaseRouter);
 app.use('/api/iotCloud', iotCloudRouter);
 app.use('/api', authorize('Api', ['User']));
 app.use('/api', apiRouter);

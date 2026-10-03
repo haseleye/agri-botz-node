@@ -262,7 +262,8 @@
       "solenoid2Scheduler5": "Fifth Schedule",
       "deepSleepMode": "Deep Sleep Mode",
       "dailyOnlineRefreshes": "Wake ups Rate",
-      "gmtZone": "GMT Zone"
+      "gmtZone": "GMT Zone",
+      "dailySensorTimings": "Sensors Daily Timings"
     },
     "timeAgo": {
       "created": "Created",

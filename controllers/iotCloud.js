@@ -18,7 +18,7 @@ const VARIABLE_CATEGORIES = {
         "solenoid1Manual", "solenoid2Manual"],
     INDICATORS: ["isOnline", "isActive"],
     SYSTEM: ["isTerminated"],
-    SETTINGS: ["espRestart", "deepSleepMode", "dailyOnlineRefreshes", "gmtZone"]
+    SETTINGS: ["espRestart", "deepSleepMode", "dailyOnlineRefreshes", "gmtZone", "dailySensorTimings"]
 }
 
 const connectClient = () => {
@@ -1378,6 +1378,9 @@ const addVariable = async (req, res) => {
                         if (name === 'gmtZone') {
                             variableValue = getTimeZoneOffset('Africa/Cairo');
                         }
+                        if (name === 'dailySensorTimings') {
+                            variableValue = '6:00';
+                        }
                         else {
                             variableValue = '';
                         }
@@ -1713,6 +1716,9 @@ const updateVariable = async (req, res) => {
                                     message: {}
                                 });
                             }
+                            if (variableName === 'dailySensorTimings') {
+                                variableValue = value;
+                            }
                             if (variableName === 'gmtZone') {
                                 const validCity = isValidCity(value);
                                 if (!validCity) {
@@ -1722,8 +1728,10 @@ const updateVariable = async (req, res) => {
                                         message: {}
                                     });
                                 }
+                                else {
+                                    variableValue = getTimeZoneOffset(value);
+                                }
                             }
-                            variableValue = getTimeZoneOffset(value);
                             break;
 
                         case 'boolean':
