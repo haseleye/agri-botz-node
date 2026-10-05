@@ -261,8 +261,7 @@
       "solenoid2Scheduler5": "الجدول الزمني الخامس",
       "deepSleepMode": "وضعية السكون",
       "dailyOnlineRefreshes": "معدل الاستيقاظ",
-      "gmtZone": "منطقة توقيت جرينتش",
-      "dailySensorTimings": "التوقيتات اليومية لأجهزة الاستشعار"
+      "gmtZone": "منطقة توقيت جرينتش"
     },
     "timeAgo": {
       "created": "أنشئ",
