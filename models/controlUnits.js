@@ -5,6 +5,7 @@ const controlUnitSchema = new Schema({
     _id: String,
     attributes: Object,
     firmwareVersion: String,
+    sensorsList: Array,
     deviceId: String,
     config: {
         solenoid1Pin1: Number,
@@ -13,6 +14,11 @@ const controlUnitSchema = new Schema({
         solenoid2Pin2: Number,
         relay1Pin: Number,
         relay2Pin: Number,
+        npkRs485PowerPin: Number,
+        dhtPowerPin: Number,
+        rx1Pin: Number,
+        tx1Pin: Number,
+        dhtPin: Number
     },
     isConfigured: {
         type: 'boolean',

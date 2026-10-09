@@ -11,7 +11,9 @@ const {timeAgo} = require("../utils/dateUtils");
 const {isValidCity, getTimeZoneOffset} = require("../utils/gmtCities");
 
 const VARIABLE_CATEGORIES = {
-    SENSORS: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity",],
+    SENSORS: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity",
+        "sensorScheduler1", "sensorScheduler2", "sensorScheduler3", "sensorScheduler4", "sensorScheduler5",
+        "npkState", "dhtState"],
     IRRIGATION: ["solenoid1State", "solenoid2State"],
     VALVES: ["solenoid1Scheduler1", "solenoid1Scheduler2", "solenoid1Scheduler3", "solenoid1Scheduler4", "solenoid1Scheduler5",
         "solenoid2Scheduler1", "solenoid2Scheduler2", "solenoid2Scheduler3", "solenoid2Scheduler4", "solenoid2Scheduler5",
@@ -555,7 +557,7 @@ const registerControlUnit = async (req, res) => {
 
         const version = firmwareVersion.toString().split('.');
         if (version.length !== 3 || !isNumeric(version[0]) || !isNumeric(version[1]) || !isNumeric(version[2])
-            || version[0] < 1 || version[0] > 40 || version[1] <= 0 || version[2] < 0 || version[2] > 9) {
+            || version[0] < 1 || version[1] <= 0 || version[2] < 0) {
             return res.status(400).json({
                 status: "failed",
                 error: req.i18n.t('iot.invalidDataType'),
@@ -572,7 +574,19 @@ const registerControlUnit = async (req, res) => {
             });
         }
 
-        await ControlUnits.create({_id: serialNumber, attributes, firmwareVersion})
+        const sensors = version[2].toString().split('');
+        if ((sensors.length !== 1 && sensors.length !== 9) || (sensors.length === 1 && sensors[0] !== '0')) {
+            return res.status(400).json({
+                status: "failed",
+                error: req.i18n.t('iot.invalidDataType'),
+                message: {}
+            });
+        }
+
+        const allSensors = ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity"];
+        const sensorsList = allSensors.filter((_, index) => sensors[index] === '1');
+
+        await ControlUnits.create({_id: serialNumber, attributes, firmwareVersion, sensorsList})
             .then(() => {
                 res.status(200).json({
                     status: "success",
@@ -637,43 +651,104 @@ const preConfigureControlUnit = async (req, res) => {
                 const versionParts = controlUnit.firmwareVersion.toString().split('.');
                 const solenoidCount = parseInt(versionParts[1].toString().split('')[0]);
                 const relayCount = parseInt(versionParts[1].toString().split('')[1]);
-                if (solenoidCount === 1) {
+                const sensorsCluster = versionParts[2].toString().split('');
+
+                if (solenoidCount === 1 || solenoidCount === 2) {
                     if (config.solenoid1Pin1 === undefined || config.solenoid1Pin2 === undefined) {
                         return res.status(400).json({
                             status: "failed",
-                            error: req.i18n.t('iot.missingSolenoid1'),
+                            error: req.i18n.t('iot.missingSolenoid1Pin'),
                             message: {}
                         });
                     }
                 }
                 else if (solenoidCount === 2) {
-                    if (config.solenoid1Pin1 === undefined || config.solenoid1Pin2 === undefined
-                        || config.solenoid2Pin1 === undefined || config.solenoid2Pin2 === undefined) {
+                    if (config.solenoid2Pin1 === undefined || config.solenoid2Pin2 === undefined) {
                         return res.status(400).json({
                             status: "failed",
-                            error: req.i18n.t('iot.missingSolenoid2'),
+                            error: req.i18n.t('iot.missingSolenoid2Pin'),
                             message: {}
                         });
                     }
                 }
 
-                if (relayCount === 1) {
+                if (relayCount === 1 || relayCount === 2) {
                     if (config.relay1Pin === undefined) {
                         return res.status(400).json({
                             status: "failed",
-                            error: req.i18n.t('iot.missingRelay1'),
+                            error: req.i18n.t('iot.missingRelay1Pin'),
                             message: {}
                         });
                     }
                 }
                 else if (relayCount === 2) {
-                    if (config.relay1Pin === undefined || config.relay2Pin === undefined) {
+                    if (config.relay2Pin === undefined) {
                         return res.status(400).json({
                             status: "failed",
-                            error: req.i18n.t('iot.missingRelay2'),
+                            error: req.i18n.t('iot.missingRelay2Pin'),
                             message: {}
                         });
                     }
+                }
+
+                if (sensorsCluster.length === 9) {
+                    const isNpkSensor = sensorsCluster.slice(0, 7).reduce((acc, num) => acc + num, 0) > 0;
+                    const isTempSensor = sensorsCluster.slice(7).reduce((acc, num) => acc + num, 0) > 0;
+
+                    if (isNpkSensor && config.npkRs485PowerPin === undefined) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.missingNpkRs485PowerPin'),
+                            message: {}
+                        });
+                    }
+
+                    if (isTempSensor && config.dhtPowerPin === undefined) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.missingDhtPowerPin'),
+                            message: {}
+                        });
+                    }
+
+                    if (isNpkSensor && config.rx1Pin === undefined || config.tx1Pin === undefined) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.missingRx1Tx1Pin'),
+                            message: {}
+                        });
+                    }
+
+                    if (isTempSensor && config.dhtPin === undefined) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.missingDhtPin'),
+                            message: {}
+                        });
+                    }
+                }
+
+                const valueToKeysMap = {};
+                const duplicates = {};
+                // Map each pin value to all property keys using it
+                for (const [key, value] of Object.entries(config)) {
+                    if (!valueToKeysMap[value]) {
+                        valueToKeysMap[value] = [];
+                    }
+                    valueToKeysMap[value].push(key);
+                }
+                // Filter out values that are assigned to more than one key
+                for (const [value, keys] of Object.entries(valueToKeysMap)) {
+                    if (keys.length > 1) {
+                        duplicates[value] = keys;
+                    }
+                }
+                if (Object.keys(duplicates).length > 0) {
+                    return res.status(400).json({
+                        status: "failed",
+                        error: req.i18n.t('iot.pinDuplicates'),
+                        message: {}
+                    });
                 }
 
                 await Devices.findOne({_id: deviceId}, {_id: 1, isTerminated: 1, controlUnitId: 1})
@@ -1387,6 +1462,8 @@ const addVariable = async (req, res) => {
                         switch (name) {
                             case 'solenoid1State':
                             case 'solenoid2State':
+                            case 'npkState':
+                            case 'dhtState':
                             case 'espRestart':
                             case 'isOnline':
                             case 'isTerminated':
