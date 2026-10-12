@@ -11,16 +11,15 @@ const {timeAgo} = require("../utils/dateUtils");
 const {isValidCity, getTimeZoneOffset} = require("../utils/gmtCities");
 
 const VARIABLE_CATEGORIES = {
-    SENSORS: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity",
-        "sensorScheduler1", "sensorScheduler2", "sensorScheduler3", "sensorScheduler4", "sensorScheduler5",
-        "npkState", "dhtState"],
-    IRRIGATION: ["solenoid1State", "solenoid2State"],
+    SENSORS: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity"],
+    READINGS: ["sensorScheduler1", "sensorScheduler2", "sensorScheduler3", "sensorScheduler4", "sensorScheduler5", "npkState", "dhtState"],
+    IRRIGATION: ["solenoid1Manual", "solenoid2Manual"],
     VALVES: ["solenoid1Scheduler1", "solenoid1Scheduler2", "solenoid1Scheduler3", "solenoid1Scheduler4", "solenoid1Scheduler5",
         "solenoid2Scheduler1", "solenoid2Scheduler2", "solenoid2Scheduler3", "solenoid2Scheduler4", "solenoid2Scheduler5",
-        "solenoid1Manual", "solenoid2Manual"],
+        "solenoid1State", "solenoid2State"],
     INDICATORS: ["isOnline", "isActive"],
     SYSTEM: ["isTerminated"],
-    SETTINGS: ["espRestart", "deepSleepMode", "dailyOnlineRefreshes", "gmtZone"]
+    SETTINGS: ["espRestart", "deepSleepMode", "gmtZone"]
 }
 
 const connectClient = () => {
@@ -1389,11 +1388,14 @@ const addVariable = async (req, res) => {
         if (VARIABLE_CATEGORIES.SENSORS.includes(name)) {
             category = "SENSORS";
         }
-        else if (VARIABLE_CATEGORIES.IRRIGATION.includes(name)) {
-            category = "WATER_VALVES";
+        else if (VARIABLE_CATEGORIES.READINGS.includes(name)) {
+            category = "READINGS";
         }
         else if (VARIABLE_CATEGORIES.VALVES.includes(name)) {
-            category = "WATER_VALVES";
+            category = "VALVES";
+        }
+        else if (VARIABLE_CATEGORIES.IRRIGATION.includes(name)) {
+            category = "IRRIGATION";
         }
         else if (VARIABLE_CATEGORIES.INDICATORS.includes(name)) {
             category = "INDICATORS";
@@ -1441,12 +1443,7 @@ const addVariable = async (req, res) => {
                         break;
 
                     case 'float':
-                        if (name === 'dailyOnlineRefreshes') {
-                            variableValue = 12.0;
-                        }
-                        else {
-                            variableValue = 0.0;
-                        }
+                        variableValue = 0.0;
                         break;
 
                     case 'string':
@@ -1769,15 +1766,6 @@ const updateVariable = async (req, res) => {
                                     error: req.i18n.t('iot.invalidDataType'),
                                     message: {}
                                 });
-                            }
-                            if (variableName === 'dailyOnlineRefreshes') {
-                                if (value <= 0 || value > 24) {
-                                    return res.status(400).json({
-                                        status: "failed",
-                                        error: req.i18n.t('iot.invalidDataType'),
-                                        message: {}
-                                    });
-                                }
                             }
                             variableValue = Number(value);
                             break;
@@ -2988,7 +2976,7 @@ const getSiteInfo = async (req, res) => {
                                 })};
                                 const sensorsList = variables.filter((variable) => variable.deviceId === gadget.deviceId && variable.category === 'SENSORS');
                                 newGadget.numberOfSensors = sensorsList.length;
-                                const valvesList = variables.filter((variable) => variable.deviceId === gadget.deviceId && variable.category === 'IRRIGATION');
+                                const valvesList = variables.filter((variable) => variable.deviceId === gadget.deviceId && variable.category === 'VALVES');
                                 newGadget.numberOfValves = valvesList.length;
                                 if (role === 'USER') {
                                     delete newGadget.deviceId;
@@ -3096,7 +3084,7 @@ const getGadgetInfo = async (req, res) => {
                                 variable.timeAgo = timeAgo(variable.updatedAt, req.i18n.t('general.language'));
                             }
 
-                            if (/^solenoid\dScheduler\d$/.test(variable.name) || variable.name === 'dailyOnlineRefreshes' || variable.name === 'gmtZone') {
+                            if (/^solenoid\dScheduler\d$/.test(variable.name) || variable.name === 'gmtZone') {
                                 variable.timeAgo = req.i18n.t('iot.timeAgo.updated') + " " + variable.timeAgo;
                             }
 
@@ -3148,7 +3136,7 @@ const getGadgetInfo = async (req, res) => {
 
                         const sensorsList = variables.filter((variable) => variable.category === 'SENSORS');
                         gadgetInfo.numberOfSensors = sensorsList.length;
-                        const valvesList = variables.filter((variable) => variable.category === 'IRRIGATION');
+                        const valvesList = variables.filter((variable) => variable.category === 'VALVES');
                         gadgetInfo.numberOfValves = valvesList.length;
 
                         res.status(200).json({

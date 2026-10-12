@@ -273,7 +273,6 @@
       "sensorScheduler4": "Fourth Schedule",
       "sensorScheduler5": "Fifth Schedule",
       "deepSleepMode": "Deep Sleep Mode",
-      "dailyOnlineRefreshes": "Wake ups Rate",
       "gmtZone": "GMT Zone"
     },
     "timeAgo": {
