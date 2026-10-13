@@ -16,7 +16,7 @@ const arduinoWebhook = async (req, res) => {
         // const dataLoggers = await DataLoggers.find({deviceId}, {variableId: 1, eventId: 1, value: 1});
         data.values.map(async (variable) => {
             if (VARIABLE_CATEGORIES.SENSORS.includes(variable.name) || VARIABLE_CATEGORIES.IRRIGATION.includes(variable.name)
-                || VARIABLE_CATEGORIES.VALVES.includes(variable.name) || ['isOnline'].includes(variable.name)) {
+                || VARIABLE_CATEGORIES.VALVES.includes(variable.name) || ['isOnline'].includes(variable.name) || ['heartBeat'].includes(variable.name)) {
                 dataLogger.variableId = variable.id;
                 dataLogger.variableName = variable.name;
                 dataLogger.deviceId = deviceId;
@@ -43,7 +43,7 @@ const arduinoWebhook = async (req, res) => {
                 {value: update.value, updatedAt: update.updatedAt}
             );
 
-            if (['isOnline', 'solenoid1State'].includes(update.variableName)) {
+            if (['isOnline', 'solenoid1State', 'heartBeat'].includes(update.variableName)) {
                 emitVariableUpdate({
                     variableId: update.variableId,
                     variableName: update.variableName,
