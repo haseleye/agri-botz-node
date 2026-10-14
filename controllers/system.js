@@ -7,6 +7,7 @@ const {registerHeartbeat, trackOnlineState, startHeartbeatWatchdog} = require('.
 startHeartbeatWatchdog();
 
 const arduinoWebhook = async (req, res) => {
+    console.log('=== ARDUINO WEBHOOK HIT ===');
     try {
         const data = await req.body;
         const deviceId = data.device_id;
