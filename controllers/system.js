@@ -10,6 +10,7 @@ const arduinoWebhook = async (req, res) => {
     console.log('=== ARDUINO WEBHOOK HIT ===');
     try {
         const data = await req.body;
+        console.log(data);
         const deviceId = data.device_id;
         const eventId = data.event_id;
         const dataLoggerList = [];
