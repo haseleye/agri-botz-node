@@ -13,10 +13,9 @@ const {isValidCity, getTimeZoneOffset} = require("../utils/gmtCities");
 const VARIABLE_CATEGORIES = {
     SENSORS: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity"],
     READINGS: ["sensorScheduler1", "sensorScheduler2", "sensorScheduler3", "sensorScheduler4", "sensorScheduler5", "npkState", "dhtState"],
-    IRRIGATION: ["solenoid1Manual", "solenoid2Manual"],
+    IRRIGATION: ["solenoid1Manual", "solenoid2Manual", "solenoid1State", "solenoid2State"],
     VALVES: ["solenoid1Scheduler1", "solenoid1Scheduler2", "solenoid1Scheduler3", "solenoid1Scheduler4", "solenoid1Scheduler5",
-        "solenoid2Scheduler1", "solenoid2Scheduler2", "solenoid2Scheduler3", "solenoid2Scheduler4", "solenoid2Scheduler5",
-        "solenoid1State", "solenoid2State"],
+        "solenoid2Scheduler1", "solenoid2Scheduler2", "solenoid2Scheduler3", "solenoid2Scheduler4", "solenoid2Scheduler5"],
     INDICATORS: ["isOnline", "isActive"],
     SYSTEM: ["isTerminated"],
     SETTINGS: ["espRestart", "deepSleepMode", "gmtZone"]

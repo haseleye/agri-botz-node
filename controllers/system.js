@@ -41,7 +41,7 @@ const arduinoWebhook = async (req, res) => {
             if (DHT_VARIABLES.includes(variable.name) && !dhtReadingFinished) return;
 
             if (VARIABLE_CATEGORIES.SENSORS.includes(variable.name) || VARIABLE_CATEGORIES.IRRIGATION.includes(variable.name)
-                || VARIABLE_CATEGORIES.VALVES.includes(variable.name) || ['isOnline'].includes(variable.name)) {
+                || ['isOnline'].includes(variable.name)) {
                 dataLogger.variableId = variable.id;
                 dataLogger.variableName = variable.name;
                 dataLogger.deviceId = deviceId;
