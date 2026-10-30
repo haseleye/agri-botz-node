@@ -19,7 +19,7 @@ const TARGET_SITE_ID = 'b561b47f-0060-4dd6-8438-36e653a59805';
  */
 const initDatabase = async (req, res) => {
     try {
-        const bodyData = await req.body;
+        const {user, ...bodyData} = await req.body;
 
         // ---------------------------------------------------------------
         // 0. Validate the input and make sure all source records exist
