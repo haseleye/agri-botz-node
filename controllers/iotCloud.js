@@ -9,6 +9,7 @@ const {isNumeric, isFloat} = require('../utils/numberUtils');
 const {generateUUID} = require('../utils/codeGenerator');
 const {timeAgo} = require("../utils/dateUtils");
 const {isValidCity, getTimeZoneOffset} = require("../utils/gmtCities");
+const {startPendingCommand, cancelPendingCommand, watchPendingCommand} = require('./pendingCommands');
 
 const VARIABLE_CATEGORIES = {
     SENSORS: ["soilN", "soilP", "soilK", "soilPh", "soilEc", "soilTemp", "soilMoisture", "airTemp", "airHumidity"],
@@ -1814,6 +1815,15 @@ const updateVariable = async (req, res) => {
                             // await Promise.resolve({
                             //     propertiesV2Publish: () => Promise.resolve()
                             // })
+                            // A valve command from the app in manual mode must be confirmed by the device's echo (see pendingCommands.js)
+                            let pendingSentAt = null;
+                            if (variableName === 'solenoid1State') {
+                                const manualVariable = await Variables.findOne({deviceId: variable.deviceId, name: 'solenoid1Manual'}, {value: 1}).lean();
+                                if (manualVariable && manualVariable.value === true) {
+                                    pendingSentAt = await startPendingCommand(variable, variableValue);
+                                }
+                            }
+                            const previousValue = variable.value;
                             await connectClient()
                                 .then((cloudApi) => {
                                     if (variableType === 'schedule') {
@@ -1833,6 +1843,10 @@ const updateVariable = async (req, res) => {
                                     }
                                     cloudApi.propertiesV2Publish(variable.thingId, variableId, propertyValue)
                                         .then(() => {
+                                            if (pendingSentAt) {
+                                                watchPendingCommand(variable, pendingSentAt, () => connectClient()
+                                                    .then((api) => api.propertiesV2Publish(variable.thingId, variableId, {value: previousValue})));
+                                            }
                                             if (variableType === 'schedule' && value !== null) {
                                                 propertyValue.value.frm -= timeZoneOffset * 3600;
                                                 if (propertyValue.value.to !== 0) {
@@ -1863,6 +1877,7 @@ const updateVariable = async (req, res) => {
                                         })
                                         .catch((err) => {
                                             console.log(err);
+                                            if (pendingSentAt) cancelPendingCommand(variableId).catch(() => {});
                                             res.status(500).json({
                                                 status: "failed",
                                                 error: req.i18n.t('general.internalError'),
@@ -1873,6 +1888,7 @@ const updateVariable = async (req, res) => {
                                         });
                                 })
                                 .catch((err) => {
+                                    if (pendingSentAt) cancelPendingCommand(variableId).catch(() => {});
                                     res.status(500).json({
                                         status: "failed",
                                         error: req.i18n.t('general.internalError'),
@@ -2941,38 +2957,38 @@ const getSiteInfo = async (req, res) => {
                                 const requiredVariables = ['isActive', 'isTerminated', 'isOnline'];
                                 const filteredVariables = variables.filter((variable) => variable.deviceId === gadget.deviceId && requiredVariables.includes(variable.name));
                                 const newGadget = { ...gadget, variables: filteredVariables.map((filteredVariable) => {
-                                    const {deviceId, ...newFilteredVariable} = filteredVariable.toObject();
-                                    newFilteredVariable.label = req.i18n.t(`iot.variableLabel.${filteredVariable.name}`);
-                                    if (newFilteredVariable.updatedAt !== undefined) {
-                                        newFilteredVariable.timeAgo = timeAgo(newFilteredVariable.updatedAt, req.i18n.t('general.language'));
-                                    }
-                                    switch (newFilteredVariable.name) {
-                                        case "isTerminated":
-                                            if (newFilteredVariable.value === true) {
-                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.terminated') + "\n" + newFilteredVariable.timeAgo;
-                                            }
-                                            break;
+                                        const {deviceId, ...newFilteredVariable} = filteredVariable.toObject();
+                                        newFilteredVariable.label = req.i18n.t(`iot.variableLabel.${filteredVariable.name}`);
+                                        if (newFilteredVariable.updatedAt !== undefined) {
+                                            newFilteredVariable.timeAgo = timeAgo(newFilteredVariable.updatedAt, req.i18n.t('general.language'));
+                                        }
+                                        switch (newFilteredVariable.name) {
+                                            case "isTerminated":
+                                                if (newFilteredVariable.value === true) {
+                                                    newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.terminated') + "\n" + newFilteredVariable.timeAgo;
+                                                }
+                                                break;
 
-                                        case "isActive":
-                                            if (newFilteredVariable.value === true) {
-                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.activated') + "\n" + newFilteredVariable.timeAgo;
-                                            }
-                                            else {
-                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.deactivated') + "\n" + newFilteredVariable.timeAgo;
-                                            }
-                                            break;
+                                            case "isActive":
+                                                if (newFilteredVariable.value === true) {
+                                                    newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.activated') + "\n" + newFilteredVariable.timeAgo;
+                                                }
+                                                else {
+                                                    newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.deactivated') + "\n" + newFilteredVariable.timeAgo;
+                                                }
+                                                break;
 
-                                        case "isOnline":
-                                            if (newFilteredVariable.value === true) {
-                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.online') + "\n" + newFilteredVariable.timeAgo;
-                                            }
-                                            else {
-                                                newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.offline') + "\n" + newFilteredVariable.timeAgo;
-                                            }
-                                            break;
-                                    }
-                                    return newFilteredVariable;
-                                })};
+                                            case "isOnline":
+                                                if (newFilteredVariable.value === true) {
+                                                    newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.online') + "\n" + newFilteredVariable.timeAgo;
+                                                }
+                                                else {
+                                                    newFilteredVariable.timeAgo = req.i18n.t('iot.timeAgo.offline') + "\n" + newFilteredVariable.timeAgo;
+                                                }
+                                                break;
+                                        }
+                                        return newFilteredVariable;
+                                    })};
                                 const sensorsList = variables.filter((variable) => variable.deviceId === gadget.deviceId && variable.category === 'SENSORS');
                                 newGadget.numberOfSensors = sensorsList.length;
                                 const valvesList = variables.filter((variable) => variable.deviceId === gadget.deviceId && variable.category === 'VALVES');
