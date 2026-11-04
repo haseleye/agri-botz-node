@@ -101,7 +101,7 @@ const processWebhook = async (req, res) => {
                 trackOnlineState(deviceId, update.value, update.variableId);
             }
 
-            if (['isOnline', 'solenoid1State'].includes(update.variableName)) {
+            if (['isOnline', 'solenoid1State', 'batteryLevel'].includes(update.variableName)) {
                 emitVariableUpdate({
                     variableId: update.variableId,
                     variableName: update.variableName,
