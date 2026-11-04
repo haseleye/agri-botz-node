@@ -17,7 +17,7 @@ const VARIABLE_CATEGORIES = {
     IRRIGATION: ["solenoid1Manual", "solenoid2Manual", "solenoid1State", "solenoid2State"],
     VALVES: ["solenoid1Scheduler1", "solenoid1Scheduler2", "solenoid1Scheduler3", "solenoid1Scheduler4", "solenoid1Scheduler5",
         "solenoid2Scheduler1", "solenoid2Scheduler2", "solenoid2Scheduler3", "solenoid2Scheduler4", "solenoid2Scheduler5"],
-    INDICATORS: ["isOnline", "isActive"],
+    INDICATORS: ["isOnline", "isActive", "batteryLevel"],
     SYSTEM: ["isTerminated"],
     SETTINGS: ["espRestart", "deepSleepMode", "gmtZone"]
 }
