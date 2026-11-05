@@ -1439,7 +1439,8 @@ const addVariable = async (req, res) => {
                         break;
 
                     case 'integer':
-                        variableValue = 0;
+                        // No initial value for the battery level: it's a read-only value that only the device reports (null = not reported yet)
+                        variableValue = name === 'batteryLevel' ? null : 0;
                         break;
 
                     case 'float':
@@ -2954,7 +2955,7 @@ const getSiteInfo = async (req, res) => {
                             const newSite = {...site.toObject()};
                             newSite.numberOfGadgets = site.gadgets.length;
                             newSite.gadgets = newSite.gadgets.map((gadget) => {
-                                const requiredVariables = ['isActive', 'isTerminated', 'isOnline'];
+                                const requiredVariables = ['isActive', 'isTerminated', 'isOnline', 'batteryLevel'];
                                 const filteredVariables = variables.filter((variable) => variable.deviceId === gadget.deviceId && requiredVariables.includes(variable.name));
                                 const newGadget = { ...gadget, variables: filteredVariables.map((filteredVariable) => {
                                         const {deviceId, ...newFilteredVariable} = filteredVariable.toObject();

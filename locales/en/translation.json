@@ -253,6 +253,7 @@
       "dhtState": "DHT Status",
       "isActive": "Gadget Status",
       "isOnline": "Gadget Connectivity",
+      "batteryLevel": "Battery Level",
       "isTerminated": "Termination Status",
       "solenoid1Manual": "Manual Control",
       "solenoid2Manual": "Manual Control",

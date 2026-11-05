@@ -252,6 +252,7 @@
       "dhtState": "حالة حساس الحرارة",
       "isActive": "حالة الجهاز",
       "isOnline": "إتصال الجهاز",
+      "batteryLevel": "مستوى البطارية",
       "isTerminated": "حالة التوقف عن العمل",
       "solenoid1Manual": "التحكم اليدوي",
       "solenoid2Manual": "التحكم اليدوي",

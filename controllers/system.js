@@ -69,6 +69,17 @@ const processWebhook = async (req, res) => {
 
             if (repeatedStates.has(variable)) return;
 
+            // The battery level is only shown in the app: it updates the variable and is sent to the app, but it's not saved in the Data Logger
+            if (variable.name === 'batteryLevel') {
+                dataUpdate.variableId = variable.id;
+                dataUpdate.variableName = variable.name;
+                dataUpdate.value = variable.value
+                dataUpdate.updatedAt = variable.updated_at;
+                dataUpdateList.push(dataUpdate);
+                dataUpdate = {};
+                return;
+            }
+
             if (VARIABLE_CATEGORIES.SENSORS.includes(variable.name) || VARIABLE_CATEGORIES.IRRIGATION.includes(variable.name)
                 || ['isOnline'].includes(variable.name)) {
                 dataLogger.variableId = variable.id;
