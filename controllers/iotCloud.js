@@ -1012,24 +1012,116 @@ const updateGadgetGPS = async (req, res) => {
                     });
                 });
 
-                let duplicate;
-                let isTerminated = false;
                 user.sites.map((site) => {
                     if (site.id === siteId && site.isTerminated) {
-                        isTerminated = true;
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.terminatedSite'),
+                            message: {}
+                        });
                     }
                 });
 
-                if (isTerminated) {
+                await Users.updateOne({'sites.gadgets.id': gadgetId},
+                    {$set: {'sites.$.gadgets.$[inner].gps': gps}},
+                    {arrayFilters: [{'inner.id': gadgetId}]})
+                    .then(() => {
+                        res.status(200).json({
+                            status: "success",
+                            error: "",
+                            message: {}
+                        });
+                    })
+                    .catch((err) => {
+                        res.status(500).json({
+                            status: "failed",
+                            error: req.i18n.t('general.internalError'),
+                            message: {
+                                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                            }
+                        });
+                    });
+            })
+            .catch((err) => {
+                res.status(500).json({
+                    status: "failed",
+                    error: req.i18n.t('general.internalError'),
+                    message: {
+                        info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+                    }
+                });
+            });
+    }
+    catch (err) {
+        res.status(500).json({
+            status: "failed",
+            error: req.i18n.t('general.internalError'),
+            message: {
+                info: (process.env.ERROR_SHOW_DETAILS) === 'true' ? err.toString() : undefined
+            }
+        });
+    }
+}
+
+const updateGadgetCrop = async (req, res) => {
+    try {
+        const {gadgetId, crop, user: {id: userID}} = await req.body;
+
+        if (gadgetId === undefined || crop === undefined || crop.name === undefined || crop.growthStage === undefined) {
+            return res.status(400).json({
+                status: "failed",
+                error: req.i18n.t('iot.notComplete'),
+                message: {}
+            });
+        }
+
+        if (!isNumeric(crop.growthStage) || crop.growthStage < 0 || crop.growthStage > 6) {
+            return res.status(400).json({
+                status: "failed",
+                error: req.i18n.t('iot.invalidDataType'),
+                message: {}
+            });
+        }
+
+        await Users.findOne({'sites.gadgets.id': gadgetId}, {_id: 1, sites: 1})
+            .then(async (user) => {
+                if (!user) {
                     return res.status(400).json({
                         status: "failed",
-                        error: req.i18n.t('iot.terminatedSite'),
+                        error: req.i18n.t('iot.notCorrect'),
                         message: {}
                     });
                 }
 
+                if (user._id.toString() !== userID) {
+                    return res.status(401).json({
+                        status: "failed",
+                        error: req.i18n.t('iot.notPermitted'),
+                        message: {}
+                    });
+                }
+
+                let siteId;
+                user.sites.map((site) => {
+                    site.gadgets.map((gadget) => {
+                        if (gadget.id === gadgetId) {
+                            siteId = site.id;
+                        }
+                    });
+                });
+
+                user.sites.map((site) => {
+                    if (site.id === siteId && site.isTerminated) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.terminatedSite'),
+                            message: {}
+                        });
+                    }
+                });
+
                 await Users.updateOne({'sites.gadgets.id': gadgetId},
-                    {$set: {'sites.$.gadgets.$[inner].gps': gps}},
+                    {$set: {'sites.$.gadgets.$[inner].crop': crop}},
                     {arrayFilters: [{'inner.id': gadgetId}]})
                     .then(() => {
                         res.status(200).json({
@@ -3387,5 +3479,6 @@ module.exports = {
     terminateSite,
     updateGadgetGPS,
     updateVariable,
+    updateGadgetCrop,
     VARIABLE_CATEGORIES
 };

@@ -67,6 +67,10 @@ const userSchema = new Schema({
                         lat: Number,
                         long: Number,
                     },
+                    crop: {
+                        name: String,
+                        growthStage: Number
+                    }
                 }
             ],
             isActive: {

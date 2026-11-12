@@ -20,6 +20,8 @@ router.post('/add-device', authorize('Access', ['Admin']), iotCloud.addDevice);
 
 router.post('/update-gadget-gps', authorize('Access', ['User']), iotCloud.updateGadgetGPS);
 
+router.post('/update-gadget-crop', authorize('Access', ['User']), iotCloud.updateGadgetCrop);
+
 router.post('/add-gadget', authorize('Access', ['Admin']), iotCloud.addGadget);
 
 router.post('/rename-gadget', authorize('Access', ['User']), iotCloud.renameGadget);
