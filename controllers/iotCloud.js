@@ -660,8 +660,52 @@ const preConfigureControlUnit = async (req, res) => {
                             message: {}
                         });
                     }
+
+                    if (config.valveType === undefined) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.missingValveType'),
+                            message: {}
+                        });
+                    }
+
+                    if (!['SOLENOID', 'BALL'].includes(config.valveType.toString().toUpperCase())) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.invalidValveType'),
+                            message: {}
+                        });
+                    }
+                    else {
+                        config.valveType = config.valveType.toString().toUpperCase();
+                    }
+
+                    if (config.pulseDuration === undefined) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.missingPulseDuration'),
+                            message: {}
+                        });
+                    }
+
+                    if (config.valveType === 'SOLENOID' && (!isNumeric(config.pulseDuration) || config.pulseDuration < 50 || config.pulseDuration > 200)) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.invalidSolenoidPulseDuration'),
+                            message: {}
+                        });
+                    }
+
+                    if (config.valveType === 'BALL' && (!isNumeric(config.pulseDuration) || config.pulseDuration < 4000 || config.pulseDuration > 20000)) {
+                        return res.status(400).json({
+                            status: "failed",
+                            error: req.i18n.t('iot.invalidBallPulseDuration'),
+                            message: {}
+                        });
+                    }
                 }
-                else if (solenoidCount === 2) {
+                
+                if (solenoidCount === 2) {
                     if (config.solenoid2Pin1 === undefined || config.solenoid2Pin2 === undefined) {
                         return res.status(400).json({
                             status: "failed",
@@ -680,7 +724,7 @@ const preConfigureControlUnit = async (req, res) => {
                         });
                     }
                 }
-                else if (relayCount === 2) {
+                if (relayCount === 2) {
                     if (config.relay2Pin === undefined) {
                         return res.status(400).json({
                             status: "failed",
@@ -710,7 +754,7 @@ const preConfigureControlUnit = async (req, res) => {
                         });
                     }
 
-                    if (isNpkSensor && config.rx1Pin === undefined || config.tx1Pin === undefined) {
+                    if (isNpkSensor && (config.rx1Pin === undefined || config.tx1Pin === undefined)) {
                         return res.status(400).json({
                             status: "failed",
                             error: req.i18n.t('iot.missingRx1Tx1Pin'),
@@ -729,8 +773,10 @@ const preConfigureControlUnit = async (req, res) => {
 
                 const valueToKeysMap = {};
                 const duplicates = {};
+                const nonPinKeys = ['valveType', 'pulseDuration'];
                 // Map each pin value to all property keys using it
                 for (const [key, value] of Object.entries(config)) {
+                    if (nonPinKeys.includes(key)) continue;
                     if (!valueToKeysMap[value]) {
                         valueToKeysMap[value] = [];
                     }
