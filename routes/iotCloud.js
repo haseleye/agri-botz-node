@@ -28,7 +28,7 @@ router.post('/rename-gadget', authorize('Access', ['User']), iotCloud.renameGadg
 
 router.post('/add-variable', authorize('Access', ['Admin']), iotCloud.addVariable);
 
-router.post('/update-variable', authorize('Access', ['User']), iotCloud.updateVariable);
+router.post('/update-variable', authorize('Access', ['Admin', 'User']), iotCloud.updateVariable);
 
 router.post('/activate-site', authorize('Access', ['Admin']), iotCloud.activateSite);
 

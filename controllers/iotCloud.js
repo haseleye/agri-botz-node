@@ -19,7 +19,7 @@ const VARIABLE_CATEGORIES = {
         "solenoid2Scheduler1", "solenoid2Scheduler2", "solenoid2Scheduler3", "solenoid2Scheduler4", "solenoid2Scheduler5"],
     INDICATORS: ["isOnline", "isActive", "batteryLevel"],
     SYSTEM: ["isTerminated"],
-    SETTINGS: ["espRestart", "deepSleepMode", "gmtZone"]
+    SETTINGS: ["espRestart", "deepSleepMode", "gmtZone", "valveType", "pulseDuration"]
 }
 
 const connectClient = () => {
@@ -704,7 +704,7 @@ const preConfigureControlUnit = async (req, res) => {
                         });
                     }
                 }
-                
+
                 if (solenoidCount === 2) {
                     if (config.solenoid2Pin1 === undefined || config.solenoid2Pin2 === undefined) {
                         return res.status(400).json({
@@ -1577,8 +1577,22 @@ const addVariable = async (req, res) => {
                         break;
 
                     case 'integer':
-                        // No initial value for the battery level: it's a read-only value that only the device reports (null = not reported yet)
-                        variableValue = name === 'batteryLevel' ? null : 0;
+                        if (name === 'pulseDuration') {
+                            const controlUnit = await ControlUnits.findOne({deviceId}, {config: 1});
+                            if (!controlUnit || controlUnit.config.pulseDuration === undefined) {
+                                return res.status(400).json({
+                                    status: "failed",
+                                    error: req.i18n.t('iot.notListedPulseDuration'),
+                                    message: {}
+                                });
+                            }
+                            else {
+                                variableValue = controlUnit.config.pulseDuration;
+                            }
+                        }
+                        else {
+                            variableValue = 0;
+                        }
                         break;
 
                     case 'float':
@@ -1588,6 +1602,19 @@ const addVariable = async (req, res) => {
                     case 'string':
                         if (name === 'gmtZone') {
                             variableValue = getTimeZoneOffset('Africa/Cairo');
+                        }
+                        else if (name === 'valveType') {
+                            const controlUnit = await ControlUnits.findOne({deviceId}, {config: 1});
+                            if (!controlUnit || controlUnit.config.valveType === undefined) {
+                                return res.status(400).json({
+                                    status: "failed",
+                                    error: req.i18n.t('iot.notListedValveType'),
+                                    message: {}
+                                });
+                            }
+                            else {
+                                variableValue = controlUnit.config.valveType;
+                            }
                         }
                         else {
                             variableValue = '';
@@ -1719,7 +1746,7 @@ const addVariable = async (req, res) => {
 
 const updateVariable = async (req, res) => {
     try {
-        const {variableId, value, user: {id: userID}} = await req.body;
+        const {variableId, value, user: {id: userID, role}} = await req.body;
         let variableName, variableType, variableValue;
 
         if (variableId === undefined || value === undefined) {
@@ -1740,7 +1767,7 @@ const updateVariable = async (req, res) => {
                     });
                 }
                 else {
-                    if (variable.userID !== userID) {
+                    if (role !== 'ADMIN' && variable.userID !== userID) {
                         return res.status(401).json({
                             status: "failed",
                             error: req.i18n.t('iot.notPermitted'),
@@ -1895,6 +1922,32 @@ const updateVariable = async (req, res) => {
                                     message: {}
                                 });
                             }
+                            if (variable.name === 'pulseDuration') {
+                                const valveTypeVariable = await Variables.findOne({deviceId: variable.deviceId, name: 'valveType'});
+                                if (!valveTypeVariable) {
+                                    return res.status(400).json({
+                                        status: "failed",
+                                        error: req.i18n.t('iot.noValveTypeVariable'),
+                                        message: {}
+                                    });
+                                }
+                                const valveType = valveTypeVariable.value;
+                                if (valveType === 'SOLENOID' && (value < 50 || value > 200)) {
+                                    return res.status(400).json({
+                                        status: "failed",
+                                        error: req.i18n.t('iot.invalidSolenoidPulseDuration'),
+                                        message: {}
+                                    });
+                                }
+                                else if (valveType === 'BALL' && (value < 4000 || value > 20000)) {
+                                    return res.status(400).json({
+                                        status: "failed",
+                                        error: req.i18n.t('iot.invalidBallPulseDuration'),
+                                        message: {}
+                                    });
+                                }
+                            }
+
                             variableValue = Number(value);
                             break;
 
@@ -1926,8 +1979,25 @@ const updateVariable = async (req, res) => {
                                         message: {}
                                     });
                                 }
+                                else {
+                                    variableValue = getTimeZoneOffset(value);
+                                }
                             }
-                            variableValue = getTimeZoneOffset(value);
+                            else if (variableName === 'valveType') {
+                                if (!['SOLENOID', 'BALL'].includes(value.toString().toUpperCase())) {
+                                    return res.status(400).json({
+                                        status: "failed",
+                                        error: req.i18n.t('iot.invalidValveType'),
+                                        message: {}
+                                    });
+                                }
+                                else {
+                                    variableValue = value.toString().toUpperCase();
+                                }
+                            }
+                            else {
+                                variableValue = value;
+                            }
                             break;
 
                         case 'boolean':
