@@ -26,7 +26,6 @@ const processWebhook = async (req, res) => {
         let dataUpdate = {};
         const heartbeatList = [];
 
-        // const dataLoggers = await DataLoggers.find({deviceId}, {variableId: 1, eventId: 1, value: 1});
         const npkReadingFinished = isStateFalse(data.values, 'npkState');
         const dhtReadingFinished = isStateFalse(data.values, 'dhtState');
 

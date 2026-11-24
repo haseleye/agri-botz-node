@@ -19,7 +19,7 @@ const VARIABLE_CATEGORIES = {
         "solenoid2Scheduler1", "solenoid2Scheduler2", "solenoid2Scheduler3", "solenoid2Scheduler4", "solenoid2Scheduler5"],
     INDICATORS: ["isOnline", "isActive", "batteryLevel"],
     SYSTEM: ["isTerminated"],
-    SETTINGS: ["espRestart", "deepSleepMode", "gmtZone", "valveType", "pulseDuration"]
+    SETTINGS: ["espRestart", "deepSleepMode", "gmtZone", "valveType", "pulseDuration", "isAiEnabled"]
 }
 
 const connectClient = () => {
@@ -1631,6 +1631,7 @@ const addVariable = async (req, res) => {
                             case 'isOnline':
                             case 'isTerminated':
                             case 'deepSleepMode':
+                            case 'isAiEnabled':
                                 variableValue = false;
                                 break;
 
