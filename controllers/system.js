@@ -80,7 +80,7 @@ const processWebhook = async (req, res) => {
             }
 
             if (VARIABLE_CATEGORIES.SENSORS.includes(variable.name) || VARIABLE_CATEGORIES.IRRIGATION.includes(variable.name)
-                || ['isOnline'].includes(variable.name)) {
+                || ['isOnline'].includes(variable.name) || ['isAiEnabled'].includes(variable.name)) {
                 dataLogger.variableId = variable.id;
                 dataLogger.variableName = variable.name;
                 dataLogger.deviceId = deviceId;
