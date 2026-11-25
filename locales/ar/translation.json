@@ -260,6 +260,7 @@
       "dhtState": "حالة حساس الحرارة",
       "isActive": "حالة الجهاز",
       "isOnline": "إتصال الجهاز",
+      "isAiEnabled": "تمكين الذكاء الاصطناعي",
       "batteryLevel": "مستوى البطارية",
       "isTerminated": "حالة التوقف عن العمل",
       "solenoid1Manual": "التحكم اليدوي",
@@ -281,7 +282,9 @@
       "sensorScheduler4": "الجدول الزمني الرابع",
       "sensorScheduler5": "الجدول الزمني الخامس",
       "deepSleepMode": "وضعية السكون",
-      "gmtZone": "منطقة توقيت جرينتش"
+      "gmtZone": "منطقة توقيت جرينتش",
+      "valveType": "نوع المحبس",
+      "pulseDuration": "مدة النبضة الكهربائية"
     },
     "timeAgo": {
       "created": "أنشئ",

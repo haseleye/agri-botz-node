@@ -1653,7 +1653,8 @@ const addVariable = async (req, res) => {
                     value: variableValue,
                     deviceId,
                     thingId: device.thingId,
-                    userID: device.userID
+                    userID: device.userID,
+                    updatedAt: new Date()
                 };
 
                 if (variableValue === null) {
@@ -3164,7 +3165,7 @@ const getSiteInfo = async (req, res) => {
                             const newSite = {...site.toObject()};
                             newSite.numberOfGadgets = site.gadgets.length;
                             newSite.gadgets = newSite.gadgets.map((gadget) => {
-                                const requiredVariables = ['isActive', 'isTerminated', 'isOnline', 'batteryLevel'];
+                                const requiredVariables = ['isActive', 'isTerminated', 'isOnline', 'batteryLevel', 'isAiEnabled'];
                                 const filteredVariables = variables.filter((variable) => variable.deviceId === gadget.deviceId && requiredVariables.includes(variable.name));
                                 const newGadget = { ...gadget, variables: filteredVariables.map((filteredVariable) => {
                                         const {deviceId, ...newFilteredVariable} = filteredVariable.toObject();

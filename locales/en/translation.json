@@ -261,6 +261,7 @@
       "dhtState": "DHT Status",
       "isActive": "Gadget Status",
       "isOnline": "Gadget Connectivity",
+      "isAiEnabled": "AI Enablement",
       "batteryLevel": "Battery Level",
       "isTerminated": "Termination Status",
       "solenoid1Manual": "Manual Control",
@@ -282,7 +283,9 @@
       "sensorScheduler4": "Fourth Schedule",
       "sensorScheduler5": "Fifth Schedule",
       "deepSleepMode": "Deep Sleep Mode",
-      "gmtZone": "GMT Zone"
+      "gmtZone": "GMT Zone",
+      "valveType": "Valve Type",
+      "pulseDuration": "Pulse Duration"
     },
     "timeAgo": {
       "created": "Created",
